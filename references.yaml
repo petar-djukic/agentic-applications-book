@@ -1,0 +1,4 @@
+# CSL-YAML bibliography (pandoc --bibliography). Entries accumulate as
+# chapters cite sources; the article versions carry their own numbered
+# reference lists.
+references: []
