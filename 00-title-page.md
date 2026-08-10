@@ -1,6 +1,6 @@
 ---
 title: Agentic Applications
-subtitle: Building Applications from Agents — Declared, Verified, and Reversible
+subtitle: Agent Papers as Declarative Machines — Use, Modify, Create
 author: Petar Djukic
 date: Work in progress
 titlepage: true
@@ -12,5 +12,6 @@ tags:
   - agentic-applications
   - agent-architecture
   - declarative-agents
-  - llm-tool-use
+  - llm-agents
+  - research-replication
 ---
