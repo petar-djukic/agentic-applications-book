@@ -1,4 +1,48 @@
 # CSL-YAML bibliography (pandoc --bibliography). Entries accumulate as
 # chapters cite sources; the article versions carry their own numbered
 # reference lists.
-references: []
+references:
+- id: harel1987
+  type: article-journal
+  author:
+  - family: Harel
+    given: David
+  title: "Statecharts: A Visual Formalism for Complex Systems"
+  container-title: Science of Computer Programming
+  volume: 8
+  issue: 3
+  page: 231-274
+  issued: {year: 1987}
+  DOI: 10.1016/0167-6423(87)90035-9
+
+- id: declarativeagents2026
+  type: software
+  author:
+  - literal: Nokia Bell Labs
+  title: "declarative-agents: profile-driven runtime and design patterns for declarative, tool-augmented agents"
+  URL: https://github.com/Nokia-Bell-Labs/declarative-agents
+  issued: {year: 2026}
+
+- id: mcp2024
+  type: webpage
+  title: Model Context Protocol Specification
+  URL: https://modelcontextprotocol.io/specification
+  issued: {year: 2024}
+
+- id: anthropic2024agents
+  type: webpage
+  author:
+  - literal: Anthropic
+  title: Building Effective AI Agents
+  URL: https://www.anthropic.com/engineering/building-effective-agents
+  issued: {year: 2024}
+
+- id: djukic2026loop
+  type: post-weblog
+  author:
+  - family: Djukic
+    given: Petar
+  title: The Loop Is the Easy Part
+  container-title: Mesh Intelligence
+  URL: https://meshintelligence.substack.com/p/the-loop-is-the-easy-part
+  issued: {year: 2026}

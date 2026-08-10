@@ -29,7 +29,7 @@ What a declarative machine is, and what a tool contract declares.
 
 | Chapter | State |
 |---|---|
-| [You Can't Edit the Model](03-you-cant-edit-the-model.md) | stub |
+| [You Can't Edit the Model](03-you-cant-edit-the-model.md) | drafted |
 | [Every Agent Needs an Undo](04-every-agent-needs-an-undo.md) | stub |
 | [How to Give an Agent an API](05-give-an-agent-an-api.md) | stub |
 | [Your CLI Is Already a Tool Contract](06-your-cli-is-already-a-tool-contract.md) | stub |
