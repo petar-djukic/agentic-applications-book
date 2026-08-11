@@ -1,3 +1,8 @@
 # Generated build artifacts (rendered by `mage build`).
 figures/*.png
 generated-files/
+
+# Shared skill/command symlinks (per-item links to coding-skills and
+# writing-skills; absolute local paths, not portable). Never committed.
+.claude/commands/
+.claude/skills/
