@@ -1,0 +1,61 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+id: architecture-examples
+title: Architecture of the examples directory
+summary: |
+  Four components under one manifest. Applications hold the chapter
+  rebuilds, catalog holds pinned upstream copies, docs holds the specs
+  that bind both to the book, and magefiles enforces the contract.
+components:
+  - id: manifest
+    path: MANIFEST.yaml
+    role: |
+      The index. Binds each example to a stable chapter id, records kind
+      and status, lists the listings extracted from it, pins the single
+      runtime release, and carries provenance for catalog copies.
+  - id: applications
+    path: applications/
+    role: |
+      One directory per chapter rebuild, named by artifact. Each holds
+      agents/ (profile, machine, tools, declarations), testdata/ with
+      canned fixtures, and demo.yaml. Listings extract from here.
+  - id: catalog
+    path: catalog/
+    role: |
+      Canonical agent families copied from declarative-agents at the
+      pinned release, headers intact, simplified but never forked.
+      Nothing extracts from here.
+  - id: docs
+    path: docs/
+    role: |
+      Vision, this document, the road-map roster, and docs/srd/ with one
+      software SRD per application.
+  - id: magefiles
+    path: magefiles/
+    role: |
+      Own Go module exposing audit, test, and demo. Audit validates the
+      manifest and the constraints below; test validates every
+      application's declarations; demo runs each application on its
+      canned fixtures.
+constraints:
+  - id: pinned-runtime
+    statement: |
+      Every example runs on the one declarative-agents release the
+      manifest records. The audit fails any module or demo configuration
+      that pins a different release.
+  - id: listing-boundary
+    statement: |
+      Listings extract from applications/ and never from catalog/. The
+      boundary keeps BSD-3-covered upstream source out of the built
+      book; a listing marker under catalog/ is a finding.
+  - id: canned-demos
+    statement: |
+      mage demo completes with no network access and no credentials.
+      Fixtures make model output deterministic.
+  - id: pending-bindings
+    statement: |
+      Two checks bind into the book's own scaffolding: chapter ids
+      resolve into the book docs/ARCHITECTURE.yaml, and SRD realizes
+      references resolve into the book docs/srd/. Until those documents
+      land, the audit reports the checks as pending rather than passing
+      or failing them.

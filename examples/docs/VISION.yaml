@@ -1,0 +1,55 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+id: vision-examples
+title: Vision for the examples directory
+summary: |
+  We keep every mechanism the book describes runnable. A chapter that
+  rebuilds a paper as a declarative machine points at a directory here
+  that the reader can clone, test, and run on canned fixtures. The book
+  stays checkable because its listings are extracted from this source,
+  not retyped into prose.
+goals:
+  - id: G1
+    name: code-governs-prose
+    statement: |
+      Every listing in a drafted chapter is an extracted region of
+      example source, compared byte-for-byte by the audit. Drift between
+      what the book prints and what the code says is a finding, not a
+      review note.
+  - id: G2
+    name: upstream-governs-catalog
+    statement: |
+      Canonical agent families arrive as copies from declarative-agents,
+      pinned by release, with provenance recorded in the manifest. We
+      simplify copies; we never fork them.
+  - id: G3
+    name: book-srds-govern-example-srds
+    statement: |
+      Each application carries a software SRD stating what it must
+      contain and prove. The SRD cites the chapter SRDs it realizes
+      instead of restating their content, so a renumber breaks nothing
+      and a dangling reference is a finding.
+  - id: G4
+    name: one-runtime-release
+    statement: |
+      The whole directory runs on one declarative-agents release,
+      recorded once in the manifest. Bumping it is a single commit,
+      made on purpose, covering every example.
+non_goals:
+  - id: N1
+    name: no-build-thread
+    statement: |
+      The companion coding book accumulates one runtime across parts and
+      needs snapshot-per-part machinery. Chapters here are independent
+      rebuilds; no example depends on another, and no snapshot or diff
+      rule exists.
+  - id: N2
+    name: no-live-models
+    statement: |
+      Demos run on canned fixtures. Live-model variants are opt-in
+      future work, never a requirement for test or audit.
+  - id: N3
+    name: no-deployment-surface
+    statement: |
+      Helm, kind, packaging, and REST serving stay upstream. The book
+      consumer runs examples locally.

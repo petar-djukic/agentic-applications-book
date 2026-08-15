@@ -1,0 +1,25 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+#
+# Index of the book's runnable examples. The audit validates this file:
+# every entry pins the single runtime release below, chapter ids resolve
+# into docs/ARCHITECTURE.yaml once it exists, and catalog-family entries
+# carry a complete provenance block.
+#
+# Entry shape:
+#   - id: stateflow                # directory name under applications/ or catalog/agents/
+#     chapter: C11                 # stable chapter id from docs/ARCHITECTURE.yaml
+#     kind: chapter-application    # chapter-application | catalog-family
+#     status: planned              # planned | partial | implemented
+#     srd: docs/srd/srd-stateflow.yaml
+#     listings: [c11-1, c11-2]     # listing ids the chapter extracts from this example
+#     provenance:                  # catalog-family entries only
+#       upstream: Nokia-Bell-Labs/declarative-agents
+#       path: applications/catalog/agents/executor
+#       release: v0.20260814.4
+#       simplified: "what was dropped relative to upstream"
+schema_version: 1
+runtime:
+  module: github.com/Nokia-Bell-Labs/declarative-agents
+  release: v0.20260814.4
+examples: []
