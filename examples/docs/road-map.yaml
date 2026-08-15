@@ -1,0 +1,13 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+#
+# Roster of examples by chapter. An entry appears when a chapter's
+# rebuild starts and its status tracks the manifest entry it mirrors.
+#
+# Entry shape:
+#   - chapter: C11               # stable chapter id from the book docs/ARCHITECTURE.yaml
+#     example: stateflow         # manifest id
+#     status: planned            # planned | partial | implemented
+id: road-map-examples
+title: Examples road-map
+examples: []

@@ -1,0 +1,174 @@
+// Copyright (c) 2026 Petar Djukic. All rights reserved.
+// SPDX-License-Identifier: MIT
+
+package main
+
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
+
+const fixtureManifest = `schema_version: 1
+runtime:
+  module: github.com/Nokia-Bell-Labs/declarative-agents
+  release: v0.20260814.4
+examples:
+  - id: sagas
+    chapter: C17
+    kind: chapter-application
+    status: planned
+    srd: docs/srd/srd-sagas.yaml
+  - id: executor
+    chapter: C17
+    kind: catalog-family
+    status: implemented
+    provenance:
+      upstream: Nokia-Bell-Labs/declarative-agents
+      path: applications/catalog/agents/executor
+      release: v0.20260814.4
+      simplified: dropped the REST surface
+`
+
+// writeFixture lays out an examples root and a book root that satisfy
+// every audit check, so each test breaks exactly one invariant.
+func writeFixture(t *testing.T) (examplesRoot, bookRoot string) {
+	t.Helper()
+	root := t.TempDir()
+	examplesRoot = filepath.Join(root, "examples")
+	bookRoot = root
+	mustWrite(t, filepath.Join(examplesRoot, "MANIFEST.yaml"), fixtureManifest)
+	mustWrite(t, filepath.Join(examplesRoot, "applications", "sagas", "agents", "machine.yaml"),
+		"# Copyright (c) 2026 Nokia\n# SPDX-License-Identifier: BSD-3-Clause\nname: sagas\n")
+	mustWrite(t, filepath.Join(examplesRoot, "docs", "srd", "srd-sagas.yaml"),
+		"id: srd-sagas\nrealizes: [srd-17.1]\n")
+	mustWrite(t, filepath.Join(examplesRoot, "catalog", "agents", "executor", "profile.yaml"),
+		"# Copyright (c) 2026 Nokia\n# SPDX-License-Identifier: BSD-3-Clause\nname: executor\n")
+	mustWrite(t, filepath.Join(bookRoot, "docs", "ARCHITECTURE.yaml"),
+		"chapters:\n  - id: C17\n")
+	mustWrite(t, filepath.Join(bookRoot, "docs", "srd", "srd-17-sagas.yaml"),
+		"id: srd-17.1\n")
+	return examplesRoot, bookRoot
+}
+
+func mustWrite(t *testing.T, path, content string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func auditFindings(t *testing.T, examplesRoot, bookRoot string) []string {
+	t.Helper()
+	findings, _ := auditExamples(examplesRoot, bookRoot)
+	return findings
+}
+
+func requireFinding(t *testing.T, findings []string, fragment string) {
+	t.Helper()
+	for _, finding := range findings {
+		if strings.Contains(finding, fragment) {
+			return
+		}
+	}
+	t.Fatalf("no finding contains %q; findings = %v", fragment, findings)
+}
+
+func TestAuditPassesOnCompleteFixture(t *testing.T) {
+	examplesRoot, bookRoot := writeFixture(t)
+	findings, pending := auditExamples(examplesRoot, bookRoot)
+	if len(findings) != 0 {
+		t.Fatalf("findings on a complete fixture: %v", findings)
+	}
+	if len(pending) != 0 {
+		t.Fatalf("pending on a complete fixture: %v", pending)
+	}
+}
+
+func TestAuditPassesOnEmptyManifest(t *testing.T) {
+	root := t.TempDir()
+	examplesRoot := filepath.Join(root, "examples")
+	mustWrite(t, filepath.Join(examplesRoot, "MANIFEST.yaml"),
+		"schema_version: 1\nruntime:\n  module: m\n  release: v1\nexamples: []\n")
+	findings, _ := auditExamples(examplesRoot, root)
+	if len(findings) != 0 {
+		t.Fatalf("findings on the empty manifest: %v", findings)
+	}
+}
+
+func TestAuditRejectsSecondRelease(t *testing.T) {
+	examplesRoot, bookRoot := writeFixture(t)
+	manifest := strings.Replace(fixtureManifest, "release: v0.20260814.4\n      simplified",
+		"release: v0.20260813.1\n      simplified", 1)
+	mustWrite(t, filepath.Join(examplesRoot, "MANIFEST.yaml"), manifest)
+	requireFinding(t, auditFindings(t, examplesRoot, bookRoot), "differs from the pinned runtime release")
+}
+
+func TestAuditRejectsStrippedCatalogHeader(t *testing.T) {
+	examplesRoot, bookRoot := writeFixture(t)
+	mustWrite(t, filepath.Join(examplesRoot, "catalog", "agents", "executor", "profile.yaml"),
+		"name: executor\n")
+	requireFinding(t, auditFindings(t, examplesRoot, bookRoot), "BSD-3-Clause header missing")
+}
+
+func TestAuditRejectsUnresolvableChapterID(t *testing.T) {
+	examplesRoot, bookRoot := writeFixture(t)
+	mustWrite(t, filepath.Join(bookRoot, "docs", "ARCHITECTURE.yaml"), "chapters:\n  - id: C11\n")
+	requireFinding(t, auditFindings(t, examplesRoot, bookRoot), "does not resolve into docs/ARCHITECTURE.yaml")
+}
+
+func TestAuditRejectsListingMarkerInCatalog(t *testing.T) {
+	examplesRoot, bookRoot := writeFixture(t)
+	mustWrite(t, filepath.Join(examplesRoot, "catalog", "agents", "executor", "machine.yaml"),
+		"# Copyright (c) 2026 Nokia\n# SPDX-License-Identifier: BSD-3-Clause\n# listing:begin c17-1\nname: executor\n")
+	requireFinding(t, auditFindings(t, examplesRoot, bookRoot), "listing marker inside catalog/")
+}
+
+func TestAuditRejectsIncompleteProvenance(t *testing.T) {
+	examplesRoot, bookRoot := writeFixture(t)
+	manifest := strings.Replace(fixtureManifest, "      simplified: dropped the REST surface\n", "", 1)
+	mustWrite(t, filepath.Join(examplesRoot, "MANIFEST.yaml"), manifest)
+	requireFinding(t, auditFindings(t, examplesRoot, bookRoot), "provenance.simplified is empty")
+}
+
+func TestAuditRejectsUnpinnedApplicationModule(t *testing.T) {
+	examplesRoot, bookRoot := writeFixture(t)
+	mustWrite(t, filepath.Join(examplesRoot, "applications", "sagas", "go.mod"),
+		"module example.test/sagas\n\nrequire github.com/Nokia-Bell-Labs/declarative-agents v0.20260101.0\n")
+	requireFinding(t, auditFindings(t, examplesRoot, bookRoot), "does not pin v0.20260814.4")
+}
+
+func TestAuditRejectsDanglingRealizes(t *testing.T) {
+	examplesRoot, bookRoot := writeFixture(t)
+	mustWrite(t, filepath.Join(examplesRoot, "docs", "srd", "srd-sagas.yaml"),
+		"id: srd-sagas\nrealizes: [srd-99.9]\n")
+	requireFinding(t, auditFindings(t, examplesRoot, bookRoot), "realizes id srd-99.9 does not resolve")
+}
+
+func TestAuditReportsPendingBindings(t *testing.T) {
+	examplesRoot, bookRoot := writeFixture(t)
+	if err := os.Remove(filepath.Join(bookRoot, "docs", "ARCHITECTURE.yaml")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.RemoveAll(filepath.Join(bookRoot, "docs", "srd")); err != nil {
+		t.Fatal(err)
+	}
+	findings, pending := auditExamples(examplesRoot, bookRoot)
+	if len(findings) != 0 {
+		t.Fatalf("pending bindings must not be findings: %v", findings)
+	}
+	if len(pending) != 2 {
+		t.Fatalf("pending = %v, want the chapter-id and srd bindings", pending)
+	}
+}
+
+func TestAuditRejectsUnknownManifestField(t *testing.T) {
+	examplesRoot, bookRoot := writeFixture(t)
+	mustWrite(t, filepath.Join(examplesRoot, "MANIFEST.yaml"),
+		"schema_version: 1\nunknown_field: 1\nruntime:\n  module: m\n  release: v1\nexamples: []\n")
+	requireFinding(t, auditFindings(t, examplesRoot, bookRoot), "unknown_field")
+}
