@@ -85,6 +85,14 @@ mage all      # figures + PDF into generated-files/
 mage clean    # remove generated artifacts
 ```
 
+The book's runnable artifacts live under [examples/](examples/): one
+declarative application per chapter rebuild, plus catalog profiles
+copied from declarative-agents at a pinned release. Listings in drafted
+chapters are extracted regions of that source, and `mage audit` checks
+the manifest, the provenance pins, and every listing byte-for-byte
+against the code it extracts from. The
+[examples README](examples/README.md) states the full contract.
+
 ## Author
 
 Petar Djukic — Principal AI Architect, 20+ years of production systems,
