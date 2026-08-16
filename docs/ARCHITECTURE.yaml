@@ -26,7 +26,7 @@ components:
     role: "PlantUML sources; mage figures renders PNGs. No committed render artifacts."
   build:
     path: magefiles/
-    role: "mage all: figures then pdf into generated-files/. mage audit: the examples module checks, then listing extraction. Outline and Critic targets arrive with GH-11 and GH-12."
+    role: "mage all: figures then pdf into generated-files/. mage audit: the examples module checks, then listing extraction. mage outline: the review outline from docs/srd/. mage critic: drafted chapters against the constitutions and SRDs."
   adopted:
     path: docs/adopted/
     role: "Holdings received from other repositories, verbatim with provenance, awaiting adaptation under this book's own framework. Currently the instrumentation contracts from Build a Coding Agent (GH-13)."
