@@ -5,6 +5,80 @@
 # the Final entry goes through are the catalog memory-write block's and
 # are selected in tools.yaml, not redeclared here (C10).
 tools:
+  - name: capture_request
+    type: builtin
+    init: compose
+    visibility: internal
+    category: response
+    description: Publish the request fields to command state before anything else runs.
+    problem: |
+      Threading is single-hop, so a word that does not carry a field
+      forward loses it for the rest of the run. This machine started
+      with seed_round, which renders a constant and carries nothing, and
+      every later word selecting $.task or $.collection resolved empty.
+
+      This word was the intended fix and it does not work: run it first
+      and its own inputs resolve empty too. A compose word's inputs are
+      selected against command state, and the --request seed is not
+      there -- only a rest_client_invoke with body_source:
+      previous_result reads it, which is how the catalog memory-write
+      block gets at its own seed. So the request cannot be published to
+      command state by a compose word at all, and the fix has to look
+      different. Kept here, wired and validating, because it records
+      exactly which mechanism was tried and how it failed; #37 carries
+      the redesign.
+    goals:
+      - Read the task, collection, anchor, count, bound, id, and agent from the request seed.
+      - Publish them as one addressable command-state object.
+    requirements:
+      input:
+        - The request seed, selected as $ by the first word of the run.
+      output:
+        - One JSON object carrying every request field later words need.
+      errors:
+        - Compose or serialization failures emit CommandError.
+    non_goals:
+      - Does not read model text; nothing has run yet.
+      - Does not validate the request; a missing field surfaces where it is used.
+    parameters: {type: object, properties: {}, additionalProperties: false}
+    emits: [RequestCaptured, CommandError]
+    output:
+      description: The request fields, addressable for the rest of the run.
+      schema:
+        type: object
+        properties:
+          task: {type: string}
+          collection: {type: string}
+          anchor: {type: string}
+          n_results: {type: integer}
+          round_bound: {type: integer}
+          id: {type: string}
+          agent: {type: string}
+        required: [task, collection, anchor, n_results, round_bound, id, agent]
+    side_effects: []
+    reversibility: {classification: reversible}
+    undo: {strategy: noop, description: Publishing request fields changes no external state.}
+    relationships:
+      before: [seed_round]
+    config:
+      signal: RequestCaptured
+      inputs:
+        task: $.task
+        collection: $.collection
+        anchor: $.anchor
+        n_results: $.n_results
+        round_bound: $.round_bound
+        id: $.id
+        agent: $.agent
+      template: |-
+        {"task": {{ json task }},
+         "collection": {{ json collection }},
+         "anchor": {{ json anchor }},
+         "n_results": {{ n_results }},
+         "round_bound": {{ round_bound }},
+         "id": {{ json id }},
+         "agent": {{ json agent }}}
+
   - name: seed_round
     type: builtin
     init: compose
@@ -232,10 +306,10 @@ tools:
     config:
       signal: CollectQueryComposed
       inputs:
-        task: $.task
-        collection: $.collection
-        anchor: $.anchor
-        n_results: $.n_results
+        task: $from(request).task
+        collection: $from(request).collection
+        anchor: $from(request).anchor
+        n_results: $from(request).n_results
         round: $from(round_count).output
       template: |-
         {"content": {{ json task }},
@@ -468,7 +542,7 @@ tools:
       before: [increment_round, reduce_findings]
     config:
       left: $from(round_count).output
-      right: $.round_bound
+      right: $from(request).round_bound
       op: lt
       operand_type: number
       satisfied: RoundsRemaining

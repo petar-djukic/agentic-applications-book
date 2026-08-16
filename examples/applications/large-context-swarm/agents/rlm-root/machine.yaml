@@ -53,6 +53,8 @@ budget:
 states:
   - name: Idle
     meaning: Initial state before the task arrives.
+  - name: CapturingRequest
+    meaning: The request fields are being published as addressable command-state values.
   - name: SeedingRound
     meaning: The round counter is being published as an addressable command-state value.
   - name: Planning
@@ -97,6 +99,8 @@ terminal_states:
 signals:
   - name: Seed
     trigger: Loop initialization with the request task.
+  - name: RequestCaptured
+    trigger: The request fields were published to command state.
   - name: RoundSeeded
     trigger: The round counter was published to command state.
   - name: LLMResponded
@@ -138,11 +142,23 @@ signals:
   - name: CommandError
     trigger: Runtime, REST, or model boundary infrastructure failed.
 transitions:
+  # capture_request must be the first action. The request seed is only
+  # readable by the first word of the run, and single-hop threading
+  # means anything not published here is unreachable later (#37).
   - state: Idle
     signal: Seed
+    next: CapturingRequest
+    action: capture_request
+    label: request
+
+  - state: CapturingRequest
+    signal: RequestCaptured
     next: SeedingRound
     action: seed_round
     label: round_count
+  - state: CapturingRequest
+    signal: CommandError
+    next: Failed
 
   - state: SeedingRound
     signal: RoundSeeded
