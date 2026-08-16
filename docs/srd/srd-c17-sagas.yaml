@@ -1,0 +1,65 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+meta:
+  id: srd-c17
+  chapter: C17
+  title: "The Best Agent-Safety Paper Is From 1987"
+  file: 17-sagas.md
+  series_piece: 8
+section_goal: run the sagas discipline -- a compensating action per step, a distinct we-put-it-back outcome -- as declared undo on the tool itself
+paper:
+  - title: "Sagas"
+    authors_year: "Garcia-Molina, Salem (1987)"
+    arxiv: "SIGMOD 1987 (no arXiv)"
+  - title: "SagaLLM: Transaction Guarantees for Multi-Agent LLM Planning"
+    authors_year: "Chang et al. (2025)"
+    arxiv: "2503.11951"
+claim_under_test: >
+  An agent that changes the world needs a compensating action per step
+  and a distinct outcome for "we tried, it failed, we put it back" --
+  and declaring the undo on the tool itself is what makes the 1987
+  discipline enforceable on a 2026 agent.
+machine_paths:
+  - "declarative-agents applications/catalog/agents/applier/apply-machine.yaml -- write_overrides -> helm_dry_run -> helm_upgrade -> verify_rollout, with Done, Rejected, RolledBack, Failed as distinguished terminals"
+  - "per-ToolDef reversibility and undo blocks, e.g. coding-agent/agents/planner/request-declarations.yaml"
+modification:
+  change: "remove the RolledBack terminal so rollback outcomes land in Failed"
+  run: "the applier demo on a rollout that fails verification"
+  expect: "the run still compensates but can no longer report that it did"
+  because: "the distinct outcome is information, not mechanism -- and losing it is the observable cost"
+verdict_type: holds
+create_pointer: "declare a compensating action for one currently irreversible tool, naming the undo strategy and the receipt fields it captures"
+goals:
+  - id: G1.14
+    goal: The reader can map saga steps and compensations onto tools and undo declarations.
+  - id: G5.5
+    goal: The reader asks of any agent-safety proposal -- where is the compensation declared, and who runs it.
+objective: >
+  Read the 1987 discipline against the applier machine's four terminals
+  and the per-tool undo blocks, with SagaLLM as the modern bookend.
+prior_material:
+  - path: 17-sagas.md
+    offers: claim under test
+  - path: "substack brainstorm/implement-sagas.md"
+    offers: message, the applier path, the four terminals
+citations:
+  - id: sagas-1987
+    role: anchor
+    gap: "add to references.yaml (SIGMOD 1987)"
+  - id: sagallm-2025
+    role: evidence
+    gap: "add to references.yaml (arXiv 2503.11951)"
+constitutions: [V-M1, V-G3, A-1, A-7]
+content:
+  - say: the 1987 mechanism, stated as the authors stated it
+  - say: mapping onto the applier's four terminals
+  - say: the per-tool undo blocks as compensations declared where the effect is
+  - say: SagaLLM as evidence the field is rediscovering this
+  - say: exercise, create pointer, takeaway question
+links:
+  requires: [C8, C16]
+  supports: [C19]
+gaps:
+  - references.yaml lacks both ids
+acceptance:
+  - the compensation walk uses the applier's actual terminals (A-5)

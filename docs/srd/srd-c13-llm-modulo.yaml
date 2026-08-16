@@ -1,0 +1,57 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+meta:
+  id: srd-c13
+  chapter: C13
+  title: "Kambhampati Was Right, and My Compiler Agrees"
+  file: 13-llm-modulo.md
+  series_piece: 4
+section_goal: run LLM-Modulo as the planner machine, and show that for code the sound critics are free
+paper:
+  - title: "LLMs Can't Plan, But Can Help Planning in LLM-Modulo Frameworks"
+    authors_year: "Kambhampati, Valmeekam, Guan, Verma, Stechly, Bhambri, Saldyt, Murthy (2024)"
+    arxiv: "2402.01817"
+claim_under_test: >
+  Sound verifiers make LLM planning honest. The practical discovery is
+  that for code the sound critics are free -- vet, build, and test were
+  sitting there all along.
+machine_paths:
+  - "declarative-agents applications/catalog/agents/planner/machine.yaml -- plan, materialize, execute, vet/build/test, counter-based bounded retry over a requirement graph, conversation reset between tasks"
+modification:
+  change: "raise the retry limit from two to five in check_retry_limit's config"
+  run: "the planner demo on a task that fails vet"
+  expect: "more retries, same terminal honesty -- the bound moves, the soundness does not"
+  because: "the critics gate the exit; the budget only prices persistence"
+verdict_type: holds
+create_pointer: "add a fourth sound critic -- a license-header check -- naming the exec declaration and the machine edge between test and done"
+goals:
+  - id: G1.10
+    goal: The reader can place generate-verify-bound onto the planner's states.
+  - id: G5.3
+    goal: The reader asks of any planning paper -- what is the sound critic, and what does it cost.
+objective: >
+  Map the paper's architecture onto the planner machine, then argue the
+  free-critics point with the vet/build/test excerpts.
+prior_material:
+  - path: 13-llm-modulo.md
+    offers: claim under test
+  - path: "substack brainstorm/implement-llm-modulo.md"
+    offers: message, the 461-line machine pointer
+citations:
+  - id: llm-modulo-2024
+    role: anchor
+    gap: "add to references.yaml (arXiv 2402.01817)"
+constitutions: [V-M1, V-S3, A-1, A-2]
+content:
+  - say: the architecture in the paper's own terms
+  - say: mapping onto the planner machine, excerpt within budget
+  - say: the free critics -- vet, build, test as the sound verifier set
+  - say: what the paper could not know -- conversation reset as plan hygiene
+  - say: exercise, create pointer, takeaway question
+links:
+  requires: [C12]
+  supports: [C14]
+gaps:
+  - references.yaml lacks the paper id
+acceptance:
+  - no benchmark number appears; the claim rides the machine (A-2)

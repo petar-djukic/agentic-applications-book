@@ -1,0 +1,62 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+meta:
+  id: srd-c15
+  chapter: C15
+  title: "The Cheap Model Answers Most Questions"
+  file: 15-frugalgpt.md
+  series_piece: 6
+section_goal: run model routing as a declared classifier with a declared fallback, so a broken router degrades cost, never availability
+paper:
+  - title: "FrugalGPT: How to Use Large Language Models While Reducing Cost and Improving Performance"
+    authors_year: "Chen, Zaharia, Zou (2023)"
+    arxiv: "2305.05176"
+  - title: "RouteLLM: Learning to Route LLMs with Preference Data"
+    authors_year: "Ong, Almahairi, et al. (2024)"
+    arxiv: "2406.18665"
+claim_under_test: >
+  Routing in production is also the fallback path, and the machine
+  version declares it: every way the router can fail routes to the fast
+  tier, so a broken classifier degrades cost, never availability.
+machine_paths:
+  - "declarative-agents applications/chatbot-mesh/agents/chatbot/request-machine.yaml -- SelectingTier -> ParsingTier -> Answering ($tool), fallback edges to invoke_llm_fast on parse failure or classifier error"
+modification:
+  change: "break the tier classifier's output schema so every parse fails"
+  run: "the chatbot demo"
+  expect: "every request answered by the fast tier; zero failures surfaced"
+  because: "the fallback edges are transitions, not exception handlers"
+verdict_type: holds
+create_pointer: "add a third tier between fast and full, naming the llm config file and the two transitions that route into it"
+goals:
+  - id: G1.12
+    goal: The reader can state routing as classifier-plus-declared-fallback.
+  - id: G3.9
+    goal: The reader can enumerate a router's failure edges from the machine file.
+objective: >
+  Map the cost argument onto the tier selection excerpt, then walk every
+  failure edge to the fast tier.
+prior_material:
+  - path: 15-frugalgpt.md
+    offers: claim under test
+  - path: "substack brainstorm/implement-frugalgpt.md"
+    offers: message, the fallback-edge pointers
+citations:
+  - id: frugalgpt-2023
+    role: anchor
+    gap: "add to references.yaml (arXiv 2305.05176)"
+  - id: routellm-2024
+    role: anchor
+    gap: "add to references.yaml (arXiv 2406.18665)"
+constitutions: [V-M1, V-S5, A-1, A-2]
+content:
+  - say: the papers' routing economics in one paragraph, no reproduced numbers
+  - say: the tier machine excerpt and the fallback edges
+  - say: what aged -- routing became a product feature; the declared fallback did not
+  - say: exercise, create pointer, takeaway question
+links:
+  requires: [C14]
+  supports: [C16]
+gaps:
+  - references.yaml lacks both paper ids
+acceptance:
+  - the broken-classifier run shows degraded cost with intact availability (A-6)

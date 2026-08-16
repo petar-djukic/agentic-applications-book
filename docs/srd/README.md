@@ -39,7 +39,7 @@ that encode the chapter form (voice.yaml V-S1..S7):
 |---|---|
 | `paper` | every paper the chapter rebuilds: title, authors-year, arXiv or venue id; the implemented paper is always the chapter's reference [1] |
 | `claim_under_test` | the paper's claim restated falsifiably — a run could contradict it; this is what the retest box prints (V-R1) |
-| `machine_paths` | the files that carry the mechanism: paths in declarative-agents or in `examples/`; the mapping table's source (V-S3) |
+| `machine_paths` | the files that carry the mechanism: paths in declarative-agents, in a named sibling repository, or in `examples/`; the mapping table's source (V-S3) |
 | `modification` | the exercise (V-S5): change X, run Y, expect Z, because W |
 | `verdict_type` | the *predicted* verdict from the taxonomy (A-3, definitions.yaml); the draft may land elsewhere, and the SRD is updated when it does |
 | `create_pointer` | the extension the chapter closes on (V-S6): what to build, which pieces to add |
