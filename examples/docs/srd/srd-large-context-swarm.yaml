@@ -1,0 +1,212 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+id: srd-large-context-swarm
+title: Software requirements for the large-context-swarm example
+summary: |
+  A declarative rebuild of Recursive Language Models. The corpus never
+  enters a context window. It lives in a per-task Chroma collection that
+  the agents treat as a blackboard: a root decomposes the task into
+  intents, ephemeral workers each search the collection and write one
+  provenance-tagged finding back, and the root reduces those findings
+  into a Final entry. Only handles and constant-size metadata cross the
+  root's boundary, which is the claim the chapter makes and this module
+  exists to substantiate.
+paper:
+  title: Recursive Language Models
+  arxiv: 2512.24601
+realizes:
+  # Provisional. The book's docs/srd/ does not exist yet (#10) and the
+  # book README carries no RLM chapter, so this id resolves to nothing
+  # and the audit reports it pending. It becomes real when #7 assigns
+  # the chapter id and #10 lands the chapter SRD.
+  - srd-rlm.1
+
+contains:
+  - id: C1
+    name: rlm-root-profile
+    statement: |
+      An rlm-root agent under agents/rlm-root/ shipping profile, machine,
+      tools, and declarations. The machine accepts exactly one task
+      intent and runs Idle -> Planning -> Delegating -> Collecting ->
+      Reducing -> Finalizing -> Done, with a Failed edge from every
+      state that can fail.
+  - id: C2
+    name: rlm-root-decomposition
+    statement: |
+      Planning emits two or more sub-intents from the task intent. The
+      count is data, not a constant: a task that decomposes into one
+      intent is a degenerate case the machine may take, but the fixture
+      corpus must not produce it.
+  - id: C3
+    name: rlm-root-collection
+    statement: |
+      Collecting queries the blackboard for entries tagged
+      source: derived and the current round, and receives record ids,
+      counts, and metadata. It never requests document content.
+  - id: C4
+    name: rlm-root-rounds
+    statement: |
+      The root may iterate: derived entries from round N seed the
+      intents of round N+1, up to a bound the profile declares. The
+      bound is a declared number, not an emergent stopping condition.
+  - id: C5
+    name: rlm-root-final
+    statement: |
+      Finalizing writes exactly one entry tagged as the Final answer and
+      terminates. A run that exhausts its round bound without a Final
+      entry ends in Failed, not in Done.
+  - id: C6
+    name: rlm-worker-profile
+    statement: |
+      An rlm-worker agent under agents/rlm-worker/ shipping the same
+      file set. The machine runs Seed -> Searching -> Writing -> Done,
+      with a Failed edge, and is seeded with exactly one intent.
+  - id: C7
+    name: rlm-worker-query-surface
+    statement: |
+      Searching uses all three query modes the blackboard offers: vector
+      similarity, exact matching through where_document $contains, and
+      provenance filtering through where. A worker that uses only vector
+      search does not exercise the mechanism the chapter describes.
+  - id: C8
+    name: rlm-worker-write-back
+    statement: |
+      Writing emits exactly one finding through the catalog memory-write
+      block, tagged source: derived, agent, and round. One intent
+      produces one finding; a worker that writes none has failed, and a
+      worker that writes several has broken the accounting the root
+      relies on.
+  - id: C9
+    name: rlm-worker-termination
+    statement: |
+      The worker terminates after its write. Termination is process
+      exit. The Kubernetes Job teardown and the lifecycle-exit client
+      that upstream uses are deployment surface, excluded here by
+      VISION non-goal N3, but the machine boundary is shaped so they
+      could slot in upstream unchanged.
+  - id: C10
+    name: catalog-references
+    statement: |
+      The blackboard blocks are referenced, never copied. The module
+      ships composition wrappers pointing into catalog/, and no file
+      under applications/ duplicates a catalog declaration. This is
+      VISION goal G2 applied to a consumer.
+
+invariants:
+  - id: I1
+    name: handle-discipline
+    statement: |
+      No rlm-root state receives stored document content. Planning sees
+      the task intent, Collecting sees ids and metadata, Reducing sees
+      what Collecting gathered, Finalizing writes a synthesis of it.
+      This is the whole point of the rebuild: if corpus text reaches the
+      root, the machine has reproduced ordinary retrieval augmentation
+      and the paper's claim is untested.
+  - id: I2
+    name: constant-root-context
+    statement: |
+      What the root holds does not grow with corpus size. Doubling the
+      fixture corpus changes the number of records a worker searches and
+      leaves the root's context unchanged in shape and bounded in size.
+  - id: I3
+    name: collection-lifecycle
+    statement: |
+      The collection is named per task, created at ingest, and deleted
+      at teardown. A run that fails partway still tears its collection
+      down; a leaked collection is a defect, not residue.
+  - id: I4
+    name: provenance-completeness
+    statement: |
+      Every entry the swarm writes carries source, agent, and round. An
+      untagged entry is indistinguishable from ingested corpus content
+      and breaks the root's derived-only query.
+
+testdata:
+  - id: F1
+    name: multi-document-corpus
+    statement: |
+      A fixture corpus under testdata/ large enough that no single
+      worker intent covers it. The size is a property of the test, not a
+      convenience: a corpus one worker can read whole proves nothing
+      about decomposition.
+  - id: F2
+    name: known-multi-hop-answer
+    statement: |
+      The corpus contains one answer that spans several documents and is
+      derivable from no single one. This is what the Final entry is
+      checked against.
+  - id: F3
+    name: canned-model-responses
+    statement: |
+      Deterministic canned responses for every model call the loop
+      makes, so the demo runs offline. VISION non-goal N2 and the
+      ARCHITECTURE canned-demos constraint make this an obligation of
+      the module, not a convenience of the test.
+
+evidence:
+  status: implemented
+  satisfied: |
+    D1 through D4. `mage -d examples demo` validates both profiles under
+    the pinned runtime, then runs the blackboard loop end to end against
+    loopback stubs replaying testdata/responses/ -- root plans, three
+    workers search and write, the root collects by metadata, reduces,
+    and writes the Final entry -- and asserts every D3 property against
+    the stubs' request log, exiting non-zero on any failure. The
+    evidence command is `go run ./cmd/swarmdemo` from the application
+    directory; the demo needs ports 8000 and 11434 free (#38).
+  caveat: |
+    The run is canned (N2): model output and query results replay
+    fixtures, so the assertions prove the mechanism's wiring and its
+    handle discipline, not answer quality on a live corpus. A5 is
+    asserted against real requests from a real runtime, which is the
+    part that cannot be proven by inspection.
+demo:
+  - id: D1
+    name: full-loop
+    statement: |
+      demo.yaml runs the loop end to end: ingest the fixture corpus into
+      a per-task collection, root emits intents, workers search and
+      write, root reduces, Final entry written, collection torn down.
+  - id: D2
+    name: offline
+    statement: |
+      The demo completes with no network access and no credentials.
+  - id: D3
+    name: observable-assertions
+    statement: |
+      The run makes each of these checkable from its own output rather
+      than by inspection: the collection created and deleted; at least
+      two intents emitted and one worker per intent; worker queries
+      carrying where and where_document; every derived entry tagged;
+      the root transcript holding record ids and no fixture document
+      text; the Final entry matching the known multi-hop answer.
+  - id: D4
+    name: handle-discipline-is-the-assertion
+    statement: |
+      D3's transcript check is the one that decides whether the rebuild
+      holds. A demo that runs green while corpus text sits in the root
+      transcript is a passing test of the wrong thing.
+
+excluded:
+  - id: X1
+    name: deployment-surface
+    statement: |
+      Helm topology, the kind rig, lifecycle-manager actors, Job
+      workers, and the observer fleet view stay upstream, per VISION
+      non-goal N3. The epic's rel02.0 through rel04.0 describe that
+      work; none of it belongs in this directory.
+  - id: X2
+    name: live-model-runs
+    statement: |
+      A live Chroma and Ollama variant may be added behind an explicit
+      opt-in. It is never reached by audit, test, or demo. Non-goal N2
+      makes this a requirement rather than a preference: a documented
+      skip is not enough, because a target needing a daemon must not sit
+      in the default path at all.
+  - id: X3
+    name: benchmark-scoring
+    statement: |
+      Multi-hop QA scoring, rounds-and-cost metrics, and coverage modes
+      are the epic's rel04.0 and belong with the deployment work
+      upstream. The fixture corpus proves the mechanism runs; it does
+      not measure how well it answers.

@@ -58,3 +58,11 @@ the upstream path, the release copied from, and what was simplified.
 Listings extract from `applications/`, never from `catalog/`, so
 BSD-3-covered source is not reproduced in the built book; the audit
 enforces the boundary.
+
+A family may be copied from a fork rather than from Nokia's repository
+directly, when the material the book needs was authored there. Its
+`upstream:` field names the fork, its `release:` names the
+declarative-agents release the fork's copy sits on, and `simplified:`
+says which parts are Nokia's and which the fork added. The BSD-3 header
+covers both; a copy taken this way is still a copy, unmodified and
+diffable against its source.

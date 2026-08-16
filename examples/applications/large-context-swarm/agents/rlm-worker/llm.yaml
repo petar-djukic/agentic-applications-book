@@ -1,0 +1,78 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+#
+# The one model call the worker makes. It is asked for a finding and
+# nothing else: not what to search next, not whether to write, not how
+# many rounds remain. Those are the machine's, and a model that answered
+# them would be choosing its own control flow.
+tools:
+  - name: compose_finding
+    type: builtin
+    init: invoke_llm
+    visibility: internal
+    category: reasoning
+    description: Read the retrieved chunks into one finding that answers the intent.
+    problem: |
+      The chunks a filtered query returns are passages, not an answer.
+      Something has to state what they establish about the intent, in a
+      form short enough that the root can reduce several of them without
+      the corpus travelling with them.
+    goals:
+      - State what the retrieved chunks establish about this worker's intent.
+      - Say so when they establish nothing, rather than inventing a bridge.
+    requirements:
+      input:
+        - The intent and the query result set from the previous Result.
+      output:
+        - One finding as plain text.
+      errors:
+        - Provider, timeout, and decode failures emit CommandError.
+    non_goals:
+      - Does not choose the next query or the next intent.
+      - Does not decide whether the finding is written; the machine does.
+      - Does not author an embedding vector.
+    emits: [LLMResponded, CommandError]
+    output:
+      description: The finding text.
+      schema: {type: string}
+    side_effects:
+      - kind: external_api
+        target: ollama.generate
+        state: read_only
+    reversibility:
+      classification: reversible
+    undo:
+      strategy: noop
+      description: Generating text does not mutate state.
+    errors:
+      - signal: CommandError
+        condition: The provider call fails on network, timeout, or decode.
+        state_after_failure: No finding is produced and nothing is written.
+    relationships:
+      after: [search_blackboard]
+      before: [embed_memory]
+    config:
+      model: "qwen3:8b"
+      provider: ollama
+      provider_url: "http://localhost:11434"
+      manifest_state: Reading
+      max_time: 300
+      system_prompt: |
+        You are one worker in a swarm reading a corpus none of you reads
+        whole. You have been given a single intent and the passages a
+        filtered search returned for it.
+
+        Write one finding: what these passages establish about your
+        intent. State it plainly and keep it short enough to stand on
+        its own, because another agent will combine it with findings
+        from intents you cannot see.
+
+        Quote a passage only where the exact wording carries the point.
+        Your finding is read without the passages beside it, so anything
+        you leave implicit is lost.
+
+        If the passages do not answer the intent, say that and say what
+        they do cover. A finding that reports nothing found is useful.
+        One that bridges a gap with a plausible guess is worse than
+        useless, because nothing downstream can tell it from a
+        grounded one.

@@ -1,0 +1,160 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+#
+# This document is the book's, not upstream's, and carries the MIT
+# header the rest of docs/ carries. The material it describes lives
+# under catalog/ and keeps its BSD-3 headers.
+id: srd-knowledge-manager
+title: Software requirements for the knowledge-manager catalog copy
+summary: |
+  The blackboard blocks the large-context-swarm example composes. A
+  blackboard here is ordinary Chroma storage used as shared short-term
+  memory: several agents write provenance-tagged entries into a per-task
+  collection and read each other's entries back by similarity, by
+  metadata, or by exact substring. Content stays behind handles — a
+  write returns the record id and never echoes what it stored, which is
+  what keeps the corpus out of the root's context window.
+
+  This is a simplified copy, not a fork. What it must contain and what
+  it must not lose are stated below; what was left behind is recorded in
+  the manifest's provenance block.
+
+# Not checked by the audit. auditSRDRealizes skips catalog-family
+# entries, so the manifest's srd: field on this entry is indexing rather
+# than an enforced binding, and this document carries no realizes: list.
+# Extending the check to catalog families is #28.
+
+contains:
+  - id: C1
+    name: rest-authority
+    statement: |
+      catalog/agents/knowledge-manager/corpus-rest.yaml, complete and
+      unmodified. It is the REST authority for the whole family, so the
+      copy keeps every operation, including the ones belonging to blocks
+      that did not come over. Truncating it to the swarm's subset would
+      make the file a fork of upstream's rather than a copy of it.
+  - id: C2
+    name: memory-write-block
+    statement: |
+      catalog/agents/knowledge-manager/memory-write/ — profile, machine,
+      tools, declarations. The machine runs Idle -> Embedding ->
+      ResolvingCollection -> Writing -> Succeeded, with a Failed edge
+      from each boundary word.
+  - id: C3
+    name: extension-vocabulary
+    statement: |
+      The six operations the extension adds over upstream: embed_memory
+      and embed_memory_query at Ollama;
+      create_or_get_collection_named, add_records_tagged,
+      create_or_get_collection_named_query, and query_records_filtered
+      at Chroma.
+  - id: C4
+    name: baseline-vocabulary
+    statement: |
+      The operations that predate the extension, unchanged:
+      create_or_get_collection, create_or_get_collection_carry,
+      create_or_get_collection_query, add_records, query_records,
+      delete_records, count_records, embed, embed_query, version, and
+      heartbeat.
+
+proves:
+  - id: P1
+    name: parameterized-collection
+    statement: |
+      The collection name is a declared param rendered into the request
+      body, so one family serves per-task collections rather than the
+      single literal-named one upstream assumes. The named words resolve
+      the returned collection id into their Result exactly as their
+      unnamed counterparts do.
+  - id: P2
+    name: single-hop-carry
+    statement: |
+      Previous-Result threading is single-hop, so each named
+      create-or-get word carries its inbound record or query payload
+      forward alongside the resolved id. The following write or query
+      word therefore threads both. This is why the create-or-get word
+      sits immediately before the write and not earlier.
+  - id: P3
+    name: provenance-vocabulary
+    statement: |
+      Writes carry a per-record metadata object of exactly three fields:
+      source (corpus for ingested documents, derived for agent-written
+      entries), agent (the writing profile), and round (the iteration
+      that produced the entry). Three fixed fields rather than an open
+      map, because readers filter on them and have to agree on the
+      names.
+  - id: P4
+    name: query-filters
+    statement: |
+      The filtered query word accepts a where metadata filter, a
+      where_document filter selecting by exact substring through
+      Chroma's $contains, and the result count as a declared param
+      rather than the literal 5 the unfiltered word uses.
+  - id: P5
+    name: filters-are-required-params
+    statement: |
+      Those filter and count params are declared required. The body
+      renderer substitutes a declared param that was not supplied with
+      its zero value, so an optional filter renders as a JSON null in
+      the request body instead of being omitted — and Chroma rejects a
+      null result count. This is the reason the extension adds
+      operations instead of adding optional params to the existing ones.
+  - id: P6
+    name: write-returns-a-handle
+    statement: |
+      memory-write returns the record id and never re-emits the stored
+      content. The Chroma add response carries no identifier, so the id
+      reaches the terminal Result through carry_forward on the write
+      word. A write word that echoed its input would put the content
+      back into the transcript the collection exists to keep it out of.
+  - id: P7
+    name: no-model-authored-vectors
+    statement: |
+      The embedding vector is machine-sequenced and threaded between
+      boundary words. A model cannot author a raw embedding vector, and
+      nothing in the machine asks one to.
+  - id: P8
+    name: additive-only
+    statement: |
+      The extension is additive: six new operations and one new block.
+      Every operation in C4 keeps its pre-extension declaration, so the
+      requests the ingest and reader machines send are byte-identical to
+      the ones they sent before. The copy is checkable against upstream
+      by diff, which is how this property is verified here.
+
+consumers:
+  - id: U1
+    name: large-context-swarm
+    statement: |
+      The only consumer. rlm-worker writes its findings through
+      memory-write and queries through query_records_filtered; rlm-root
+      collects derived entries by metadata filter. Both reference these
+      blocks through composition wrappers and copy nothing, per VISION
+      goal G2 and srd-large-context-swarm C10.
+
+not_copied:
+  - id: X1
+    name: sibling-blocks
+    statement: |
+      corpus-ingest, corpus-reader, rag-server, and documentation-curator
+      stay upstream. The swarm composes none of them. A live-model
+      variant of the swarm demo would need an ingest path; the canned
+      demo does not, so nothing here is blocked by their absence (#29).
+  - id: X2
+    name: fork-governance
+    statement: |
+      The fork's srd023, its use case, and its test suite are not
+      reproduced. Their requirements are restated above as P1 through
+      P8, in this directory's format and without the release numbering
+      of a repository the book does not contain.
+  - id: X3
+    name: conformance-evidence
+    statement: |
+      The fork's 740-line conformance test and its integration gate did
+      not come over. Both require a live Chroma, and VISION non-goal N2
+      keeps live dependencies out of audit, test, and demo — so there is
+      nothing here for them to run against. This is the minimum path
+      #26 allows, and it does mean the behavioural evidence for P1
+      through P7 lives upstream rather than in this repository. The
+      copy's fidelity is checkable by diff against the fork; the blocks'
+      runtime behaviour is not.

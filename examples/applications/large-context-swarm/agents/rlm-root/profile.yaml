@@ -1,0 +1,18 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+#
+# Composition wrapper. The REST authority and the three write words the
+# Final entry goes through are the catalog knowledge-manager's,
+# referenced by path. This profile declares the planning, dispatch, and
+# collection words, and nothing that already exists in the catalog
+# (VISION G2, srd-large-context-swarm C10).
+name: rlm-root
+machine: machine.yaml
+tools:
+  - tools.yaml
+tool_declarations:
+  - declarations.yaml
+  - llm.yaml
+  - ../../../../catalog/agents/knowledge-manager/memory-write/declarations.yaml
+rest_definitions:
+  - ../../../../catalog/agents/knowledge-manager/corpus-rest.yaml

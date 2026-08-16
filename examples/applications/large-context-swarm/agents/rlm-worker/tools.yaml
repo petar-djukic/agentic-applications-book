@@ -1,0 +1,16 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+#
+# Nine words in one pass: capture, three to search, one to read, one to
+# shape, three to write. The write three are the catalog memory-write
+# block's, selected here rather than redeclared.
+tools:
+  - capture_request
+  - embed_intent
+  - resolve_query_collection
+  - search_blackboard
+  - compose_finding
+  - compose_record
+  - embed_memory
+  - resolve_memory_collection
+  - write_memory

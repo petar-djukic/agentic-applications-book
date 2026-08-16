@@ -1,0 +1,140 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+#
+# The root's two model calls. Neither one is given corpus text: the
+# planner sees the task, and the reducer sees findings the workers
+# wrote. Neither is asked to decide control flow -- how many rounds run
+# is the predicate's answer, not theirs.
+tools:
+  - name: plan_intents
+    type: builtin
+    init: invoke_llm
+    visibility: internal
+    category: reasoning
+    description: Decompose the task into sub-intents, one per worker.
+    problem: |
+      A task answerable only from several places in a corpus cannot be
+      one query. Splitting it is the step that decides whether the
+      workers cover the corpus or crowd the same corner of it.
+    goals:
+      - Emit two or more intents that between them cover what the task needs.
+      - Emit them as a JSON object the parse word validates.
+    requirements:
+      input:
+        - The task, and on later rounds the findings already collected.
+      output:
+        - Raw model text holding a JSON object with an intents array.
+      errors:
+        - Provider, timeout, and decode failures emit CommandError.
+    non_goals:
+      - Does not decide how many rounds run.
+      - Does not read or request corpus content.
+      - Does not dispatch anything.
+    emits: [LLMResponded, CommandError]
+    output:
+      description: Raw plan text.
+      schema: {type: string}
+    side_effects:
+      - kind: external_api
+        target: ollama.generate
+        state: read_only
+    reversibility: {classification: reversible}
+    undo: {strategy: noop, description: Generating text does not mutate state.}
+    errors:
+      - signal: CommandError
+        condition: The provider call fails on network, timeout, or decode.
+        state_after_failure: No plan is produced and no worker is dispatched.
+    relationships:
+      before: [capture_plan]
+    config:
+      model: "qwen3:8b"
+      provider: ollama
+      provider_url: "http://localhost:11434"
+      manifest_state: Planning
+      max_time: 300
+      system_prompt: |
+        You are planning a search across a corpus you cannot read. You
+        will never see the documents. Workers will read them for you,
+        one worker per intent, and each worker sees only its own intent.
+
+        Split the task into intents that do not overlap. Two workers
+        chasing the same fact waste a read and return the same finding
+        twice; a fact no intent asks for is never found at all. Aim for
+        coverage first and economy second.
+
+        Write each intent so it stands alone. The worker reading it has
+        no idea what the task was or what the other intents are.
+
+        If findings from an earlier round are included below, plan for
+        what they left open, not for what they already settled.
+
+        Reply with JSON and nothing else:
+
+          {"intents": ["...", "..."]}
+
+        At least two. No prose before or after the object.
+
+  - name: reduce_findings
+    type: builtin
+    init: invoke_llm
+    visibility: internal
+    category: reasoning
+    description: Reduce the collected findings into the answer that gets written back.
+    problem: |
+      The findings are separate answers to separate intents. The task
+      asked one question, and answering it means saying what they
+      establish together -- which is the step no single worker could
+      take, because no worker saw more than its own slice.
+    goals:
+      - State the answer the findings support taken together.
+      - Say what remains open where they do not reach it.
+    requirements:
+      input:
+        - The task and the findings collected for the current round.
+      output:
+        - The Final answer as plain text.
+      errors:
+        - Provider, timeout, and decode failures emit CommandError.
+    non_goals:
+      - Does not request the source passages; they are not available here.
+      - Does not decide whether another round runs.
+    emits: [LLMResponded, CommandError]
+    output:
+      description: The Final answer text.
+      schema: {type: string}
+    side_effects:
+      - kind: external_api
+        target: ollama.generate
+        state: read_only
+    reversibility: {classification: reversible}
+    undo: {strategy: noop, description: Generating text does not mutate state.}
+    errors:
+      - signal: CommandError
+        condition: The provider call fails on network, timeout, or decode.
+        state_after_failure: No answer is produced and no Final entry is written.
+    relationships:
+      after: [check_round_bound]
+      before: [embed_memory]
+    config:
+      model: "qwen3:8b"
+      provider: ollama
+      provider_url: "http://localhost:11434"
+      manifest_state: Reducing
+      max_time: 300
+      system_prompt: |
+        Below are findings written by workers who each read one slice of
+        a corpus you have not seen. Answer the task from them.
+
+        The findings are what you have. You cannot go back to the
+        passages, and asking for them is not an option the system
+        offers. Work with what the workers reported.
+
+        Where the findings connect, say what they establish together --
+        that connection is the answer, and it is the thing none of the
+        workers was positioned to see.
+
+        Where they conflict, say so and say which reading the evidence
+        favours. Where they leave the task unanswered, say what is
+        missing. An answer that admits its gap is worth more here than
+        one that closes it by guessing, because this text is stored as
+        the run's result and nothing downstream re-checks it.

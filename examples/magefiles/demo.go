@@ -26,24 +26,42 @@ type demoStep struct {
 	Argv []string `yaml:"argv"`
 }
 
-// Demo runs every chapter-application's canned demo in manifest order.
+// Demo runs the canned demo of every chapter-application that has one,
+// in manifest order. Only a planned entry is skipped: planned means no
+// directory content exists yet, so there is no demo.yaml to read and
+// failing on its absence would make the manifest's own planned status
+// unusable. A partial entry does have a demo -- one that exercises less
+// than the SRD asks for -- and skipping it would hide the evidence it
+// does produce.
 func Demo() error {
-	manifest, err := loadManifest(".")
+	ran, skipped, err := demoExamples(".")
 	if err != nil {
 		return err
 	}
-	ran := 0
+	fmt.Printf("demo: %d example(s) ran, %d skipped\n", ran, skipped)
+	return nil
+}
+
+func demoExamples(examplesRoot string) (ran, skipped int, err error) {
+	manifest, err := loadManifest(examplesRoot)
+	if err != nil {
+		return 0, 0, err
+	}
 	for _, entry := range manifest.Examples {
 		if entry.Kind != kindChapterApplication {
 			continue
 		}
-		if err := runEntryDemo(".", entry); err != nil {
-			return fmt.Errorf("demo %s: %w", entry.ID, err)
+		if entry.Status == statusPlanned {
+			fmt.Printf("demo: skip %s (status %s)\n", entry.ID, entry.Status)
+			skipped++
+			continue
+		}
+		if err := runEntryDemo(examplesRoot, entry); err != nil {
+			return ran, skipped, fmt.Errorf("demo %s: %w", entry.ID, err)
 		}
 		ran++
 	}
-	fmt.Printf("demo: %d example(s) ran\n", ran)
-	return nil
+	return ran, skipped, nil
 }
 
 func runEntryDemo(examplesRoot string, entry Entry) error {
