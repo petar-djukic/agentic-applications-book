@@ -1,0 +1,254 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+#
+# ARCHITECTURE.yaml -- how the book is put together (GH-7, under EPIC
+# GH-6). Components, the chapter roster with its stable ids, the
+# per-chapter contract, and traceability. Chapter-level obligations
+# arrive with the SRDs (GH-10) and bind against this roster.
+
+meta:
+  name: agentic-applications
+  governs: "repository root"
+  version: 1
+
+components:
+  steering:
+    path: docs/
+    role: "VISION.yaml (goals) and this file; road-map.yaml and definitions.yaml (GH-8); constitutions/ (GH-9); srd/ with one drafting contract per chapter (GH-10)."
+  chapters:
+    path: "NN-slug.md (repository root)"
+    role: "Markdown is the canonical source, compiled by mage pdf through the Eisvogel pandoc template. File numbers order the reading; the stable chapter ids below are the identity every other document binds to, so renumbering files never breaks a reference."
+  examples:
+    path: examples/
+    role: "The book's runnable artifacts, governed by their own contract (examples/docs/). Listings in drafted chapters are extracted regions of example source, byte-compared by the audit; chapter ids used in examples/MANIFEST.yaml resolve against the roster in this file."
+  figures:
+    path: figures/
+    role: "PlantUML sources; mage figures renders PNGs. No committed render artifacts."
+  build:
+    path: magefiles/
+    role: "mage all: figures then pdf into generated-files/. mage audit: the examples module checks, then listing extraction. Outline and Critic targets arrive with GH-11 and GH-12."
+  adopted:
+    path: docs/adopted/
+    role: "Holdings received from other repositories, verbatim with provenance, awaiting adaptation under this book's own framework. Currently the instrumentation contracts from Build a Coding Agent (GH-13)."
+
+# The per-chapter contract. Defined in the Implement-a-Paper constitution
+# (ported to docs/constitutions/voice.yaml by GH-9); named here because
+# every paper chapter's SRD is an instance of it, never restated here.
+chapter_form:
+  source: "docs/constitutions/voice.yaml (GH-9), porting substack/.claude/constitutions/articles/implement-a-paper.md"
+  shape: |
+    One message per chapter, about the paper's mechanism meeting the
+    machine's constraints. After the opening, the retest box: the paper's
+    claim restated falsifiably, the interval since publication, and the
+    promise to run it. Then the six sections: the paper's claim; the
+    mapping (concept-to-construct table with the load-bearing YAML on the
+    page, under ~40 lines); the forced decisions and what aged; the
+    exercise (one modification, predicted observable outcome); the create
+    pointer (present in every chapter); the takeaway question. The
+    run-gate is a publish gate: the demo must run from a fresh clone at a
+    named release before a chapter ships, and Create-tier chapters land
+    their code in declarative-agents first.
+  boundary: |
+    Every rebuild is a conceptual replication, not a reproduction. No
+    chapter claims to have rerun a paper's benchmarks unless it did, and
+    claims track the example manifests' status vocabulary: nothing
+    partial or planned is described as running.
+
+# The chapter roster. Ids are stable slugs frozen at assignment, not
+# positions: C<n> records the file number each chapter had when its id
+# was assigned, and the id never changes afterwards -- a chapter keeps
+# its id through any renumbering, and a new chapter takes a new id
+# rather than shifting its neighbours' (the convention question raised
+# in GH-27, settled here). C-rlm predates this file with a
+# non-positional id and keeps it. Front matter (00, 01, part openers,
+# references) carries no id; nothing binds to it.
+structure:
+  parts:
+    - id: P1
+      title: "Part I -- The Substrate"
+      opener: 02-part-i-the-substrate.md
+      chapters:
+        - id: C3
+          title: "You Can't Edit the Model"
+          file: 03-you-cant-edit-the-model.md
+          srd: docs/srd/srd-c3-you-cant-edit-the-model.yaml
+        - id: C4
+          title: "Every Agent Needs an Undo"
+          file: 04-every-agent-needs-an-undo.md
+          srd: docs/srd/srd-c4-every-agent-needs-an-undo.yaml
+        - id: C5
+          title: "How to Give an Agent an API"
+          file: 05-give-an-agent-an-api.md
+          srd: docs/srd/srd-c5-give-an-agent-an-api.yaml
+        - id: C6
+          title: "Your CLI Is Already a Tool Contract"
+          file: 06-your-cli-is-already-a-tool-contract.md
+          srd: docs/srd/srd-c6-your-cli-is-already-a-tool-contract.yaml
+        - id: C7
+          title: "Tools Are Words, Not Sentences"
+          file: 07-tools-are-words-not-sentences.md
+          srd: docs/srd/srd-c7-tools-are-words-not-sentences.yaml
+        - id: C8
+          title: "How to Build an Agent with Rollbacks"
+          file: 08-rollbacks.md
+          srd: docs/srd/srd-c8-rollbacks.yaml
+    - id: PM
+      title: "The Map"
+      chapters:
+        - id: C9
+          title: "CoALA With a File Path in Every Box"
+          file: 09-the-map.md
+          paper: "Cognitive Architectures for Language Agents (2309.02427)"
+          series_piece: 1
+          srd: docs/srd/srd-c9-the-map.yaml
+    - id: P2
+      title: "Part II -- Papers, Used and Modified"
+      opener: 10-part-ii-used-and-modified.md
+      chapters:
+        - id: C11
+          title: "The Paper That Says What My Whole Repo Says"
+          file: 11-stateflow.md
+          paper: "StateFlow (2403.11322)"
+          series_piece: 2
+          srd: docs/srd/srd-c11-stateflow.yaml
+        - id: C12
+          title: "ReAct Is Fifteen Lines. The Other Forty-Five Are the Job."
+          file: 12-react.md
+          paper: "ReAct (2210.03629)"
+          series_piece: 3
+          srd: docs/srd/srd-c12-react.yaml
+        - id: C13
+          title: "Kambhampati Was Right, and My Compiler Agrees"
+          file: 13-llm-modulo.md
+          paper: "LLM-Modulo (2402.01817)"
+          series_piece: 4
+          srd: docs/srd/srd-c13-llm-modulo.yaml
+        - id: C14
+          title: "Retrieval That Admits It Found Nothing"
+          file: 14-crag.md
+          paper: "CRAG (2401.15884), Adaptive-RAG (2403.14403)"
+          series_piece: 5
+          srd: docs/srd/srd-c14-crag.yaml
+        - id: C15
+          title: "The Cheap Model Answers Most Questions"
+          file: 15-frugalgpt.md
+          paper: "FrugalGPT (2305.05176), RouteLLM (2406.18665)"
+          series_piece: 6
+          srd: docs/srd/srd-c15-frugalgpt.yaml
+        - id: C16
+          title: "A Judge You Can Cross-Examine"
+          file: 16-llm-as-judge.md
+          paper: "LLM-as-a-Judge (2306.05685), CRITIC (2305.11738)"
+          series_piece: 7
+          srd: docs/srd/srd-c16-llm-as-judge.yaml
+        - id: C17
+          title: "The Best Agent-Safety Paper Is From 1987"
+          file: 17-sagas.md
+          paper: "Sagas (SIGMOD 1987), SagaLLM (2503.11951)"
+          series_piece: 8
+          srd: docs/srd/srd-c17-sagas.yaml
+    - id: P3
+      title: "Part III -- Papers, Created"
+      opener: 18-part-iii-created.md
+      note: "Create tier: each mechanism lands in declarative-agents first (merged, audited, released), then the chapter documents it."
+      chapters:
+        - id: C19
+          title: "Sample Five Times, Keep the Agreement"
+          file: 19-self-consistency.md
+          paper: "Self-Consistency (2203.11171)"
+          series_piece: 9
+          srd: docs/srd/srd-c19-self-consistency.yaml
+        - id: C20
+          title: "The Retry That Remembers Why It Failed"
+          file: 20-reflexion.md
+          paper: "Reflexion (2303.11366)"
+          series_piece: 10
+          srd: docs/srd/srd-c20-reflexion.yaml
+        - id: C21
+          title: "Three Models Walk into a Disagreement"
+          file: 21-debate.md
+          paper: "Multiagent Debate (2305.14325)"
+          series_piece: 11
+          srd: docs/srd/srd-c21-debate.yaml
+        - id: C22
+          title: "The Agent That Files Its Own Playbook"
+          file: 22-workflow-memory.md
+          paper: "Agent Workflow Memory (2409.07429), Voyager (2305.16291)"
+          series_piece: 12
+          srd: docs/srd/srd-c22-workflow-memory.yaml
+        - id: C23
+          title: "Ask Every Model, Then Ask One More"
+          file: 23-mixture-of-agents.md
+          paper: "Mixture-of-Agents (2406.04692)"
+          series_piece: 13
+          srd: docs/srd/srd-c23-mixture-of-agents.yaml
+        - id: C-rlm
+          title: "The Context Window Is an Environment"
+          file: none -- chapter file not yet created; the runnable example landed first (examples/applications/large-context-swarm, GH-20)
+          paper: "Recursive Language Models (2512.24601)"
+          series_piece: 14
+          srd: docs/srd/srd-c-rlm-recursive-lms.yaml
+    - id: PC
+      title: "The Closer"
+      chapters:
+        - id: C24
+          title: "The Paper My State Machine Refused"
+          file: 24-tree-of-thoughts.md
+          paper: "Tree of Thoughts (2305.10601)"
+          series_piece: 15
+          srd: docs/srd/srd-c24-tree-of-thoughts.yaml
+
+# Where chapter material comes from. Chapters consume the series drafts
+# and the examples; each SRD names its own prior material.
+material_sources:
+  - path: examples/
+    offers: "the runnable machines, canned demos, and the listings the audit extracts"
+    feeds: "every paper chapter"
+  - path: "substack/series/implement-a-paper.md and its brainstorm stubs"
+    offers: "the 15-piece series arc the chapters consolidate from as they stabilize"
+    feeds: "every paper chapter"
+  - path: "declarative-agents (upstream and fork)"
+    offers: "the runtime, the catalog families examples copy at pinned releases, and the Create-tier landing ground"
+    feeds: "P1, every paper chapter"
+  - path: docs/adopted/instrumentation/
+    offers: "seven drafting contracts retired from Build a Coding Agent, held verbatim with their caveats"
+    feeds: "deferred -- see decisions"
+
+decisions:
+  - id: D1
+    decision: "Chapter ids are stable slugs, never positions."
+    reason: |
+      examples/MANIFEST.yaml, the road-map, and the SRDs all bind to
+      chapter ids, and the book renumbers files as parts grow. Freezing
+      the id at assignment makes a renumber a file rename, not a
+      cross-repository edit. Settles GH-27's convention question; C-rlm
+      is the precedent.
+  - id: D2
+    decision: "The RLM chapter joins Part III as C-rlm, before the closer."
+    reason: |
+      The series arc places implement-recursive-lms as piece 14 in the
+      Create tier, and its example already runs (GH-20). The chapter
+      file arrives with its draft; the id exists now so the example's
+      manifest binding resolves.
+  - id: D3
+    decision: "Instrumentation placement is deferred, not decided."
+    reason: |
+      The adopted contracts (GH-13) own material this book has committed
+      to teach, but whether it becomes a part of its own or is woven
+      through the rebuild chapters depends on the constitutions and the
+      road-map (GH-8, GH-9), which do not exist yet. Deciding structure
+      against absent documents is how work gets redone; the holdings
+      README carries the adaptation obligations either way.
+
+traceability:
+  - "VISION goals -> this file: G1 and G5 bind through chapter_form (the six sections and the verdicts); G2 through examples/ and the run-gate; G3 through the exercise section; G4 through the create pointer."
+  - "This roster -> examples: every chapter: id in examples/MANIFEST.yaml resolves against structure.parts (enforced by the examples audit the moment this file exists)."
+  - "This roster -> SRDs: each chapter names its srd: path; GH-10 creates the files and the audit's realizes binding flips to enforced when docs/srd/ lands."
+
+workflow: |
+  Spec-first, series-first: chapters run as Implement-a-Paper pieces at
+  Mesh Intelligence and consolidate here as they stabilize. SRDs (GH-10)
+  precede chapter drafts; the road-map (GH-8) orders the drafting and
+  gates Create-tier chapters on the declarative-agents work landing
+  first. The process constitution (GH-9) governs revision from the first
+  full draft onward.

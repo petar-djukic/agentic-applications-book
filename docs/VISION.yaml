@@ -1,0 +1,88 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+#
+# VISION.yaml -- what the book is for (GH-7, under EPIC GH-6).
+# Kept simple by design, on the ieee-comst model: this file carries the
+# goals; the binding rules live in docs/constitutions/ (GH-9) and are
+# referenced here, never restated.
+
+meta:
+  name: agentic-applications
+  artifact: "Book: Agentic Applications -- agent papers as declarative machines"
+  runs_first_as: "Implement a Paper series, Mesh Intelligence (substack/series/implement-a-paper.md; 15 pieces)"
+  substrate: "declarative-agents (github.com/Nokia-Bell-Labs/declarative-agents)"
+  started: 2026-08-11
+
+purpose: |
+  Each chapter takes one published agent paper, rebuilds its mechanism as
+  a declarative state machine the reader can clone and run, and reports
+  what the rebuild found the paper had left unsaid. The book stays
+  checkable because every listing is extracted from runnable source under
+  examples/ (the code-governs-prose rule, examples/docs/VISION.yaml G1),
+  and every chapter's demo must run from a fresh clone at a pinned
+  release.
+
+audience: |
+  Engineers who read agent papers, or feel guilty about not reading
+  them -- the research-curious slice of the harness readership. Written
+  as if every reader will run the machines; most will read the book as a
+  compendium of what the substrate makes easy, and the book is honest
+  about serving both.
+
+thesis: |
+  An agent paper is a mechanism plus a benchmark. Strip the benchmark
+  and the mechanism usually fits in a page of YAML you can read, run,
+  and change -- and the parts the paper never specified turn out to be
+  exactly the parts a running machine forces you to write down: the
+  signal alphabet, the budgets, the terminal states, and who owns the
+  exit.
+
+pedagogy: |
+  Use-Modify-Create, in every chapter. Use: run the shipped machine.
+  Modify: change one declared thing and watch the behavior move, with a
+  predicted observable outcome. Create: a closing pointer naming the
+  files and constructs for the next thing the reader could build --
+  every pointer a candidate for a later chapter or a repo contribution.
+  The training method predates the book; the genre precedent (Annotated
+  Transformer, nanoGPT) stops at Use, and shipping Modify and Create is
+  the difference.
+
+verdicts: |
+  Rebuilding a paper on a different substrate is a conceptual
+  replication, not a reproduction: no chapter claims to have rerun a
+  paper's benchmarks unless it did. What the rebuild tests is whether
+  the claim still makes sense once every implicit decision is declared.
+  Three verdicts are honest, and they accumulate across the book:
+
+    holds              -- the mechanism works as described on this substrate
+    holds with residue -- it works, and the rebuild names what the paper left out
+    aged out           -- the claim no longer earns its complexity
+
+  A claim surviving with named residue is the most useful outcome, not a
+  disappointing one. Papers age in the boxes they never drew.
+
+goals:
+  # Reader outcomes. Chapter-level obligations live in the SRDs (GH-10);
+  # the binding rules that serve these goals live in the constitutions
+  # (GH-9).
+  - id: G1
+    goal: "Read: the reader can state any covered paper's mechanism in a paragraph, separated from its benchmark, and knows which of its decisions the paper never specified."
+  - id: G2
+    goal: "Run: the reader can clone the book's examples at the pinned release and run every chapter's demo without credentials or live services."
+  - id: G3
+    goal: "Modify: the reader can change one declared element of a chapter's machine and predict the observable difference before running it."
+  - id: G4
+    goal: "Create: the reader can take a chapter's closing pointer and build the named extension, because the pointer names real files and real constructs."
+  - id: G5
+    goal: "Judge: the reader asks each verdict's question of the next agent paper they read -- what did the authors leave for the machine to force out of them."
+
+constitutions:
+  # Binding rules, by strand -- created by GH-9, referenced here so this
+  # file never restates them. The voice strand ports the Implement-a-Paper
+  # form (substack/.claude/constitutions/articles/implement-a-paper.md):
+  # the message contract, the retest box, the six sections, and the
+  # run-gate.
+  - path: docs/constitutions/argument.yaml
+  - path: docs/constitutions/process.yaml
+  - path: docs/constitutions/venue.yaml
+  - path: docs/constitutions/voice.yaml

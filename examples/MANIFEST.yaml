@@ -41,11 +41,8 @@ runtime:
   go_module: github.com/Nokia-Bell-Labs/declarative-agents/agent-core
   go_version: v0.20260803.1-0.20260815014700-f3e1f68d379c
 examples:
-  # chapter: provisional. The book README carries no RLM chapter and
-  # docs/ARCHITECTURE.yaml does not exist yet (#7), so the audit reports
-  # chapter-id resolution as pending. A positional id would collide with
-  # the existing 24-tree-of-thoughts.md, so the binding is held
-  # non-positional until #7 assigns the real one.
+  # C-rlm is the chapter's stable id, assigned in docs/ARCHITECTURE.yaml
+  # (Part III; ids are frozen slugs, never positions -- its D1).
   - id: large-context-swarm
     chapter: C-rlm
     kind: chapter-application
