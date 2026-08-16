@@ -83,6 +83,7 @@ template.
 
 ```bash
 mage all      # figures + PDF into generated-files/
+mage outline  # the outline PDF from docs/srd/, same directory
 mage clean    # remove generated artifacts
 ```
 

@@ -99,6 +99,38 @@ func PDF() error {
 	return nil
 }
 
+// Outline generates the book outline from docs/ARCHITECTURE.yaml,
+// docs/srd/, and docs/road-map.yaml, and renders it to PDF through the
+// same Eisvogel pipeline as the book. The markdown intermediate is kept
+// beside the PDF so a review can diff it.
+func Outline() error {
+	if err := os.MkdirAll(outputDir, 0o755); err != nil {
+		return fmt.Errorf("mkdir %s: %w", outputDir, err)
+	}
+	date := time.Now().Format("2006-01-02")
+	md := filepath.Join(outputDir, fmt.Sprintf("%s-outline-%s.md", bookSlug, date))
+	pdf := filepath.Join(outputDir, fmt.Sprintf("%s-outline-%s.pdf", bookSlug, date))
+
+	document, err := sh.Output("go", "-C", "cmd/genoutline", "run", ".", "../..")
+	if err != nil {
+		return fmt.Errorf("genoutline: %w", err)
+	}
+	if err := os.WriteFile(md, []byte(document+"\n"), 0o644); err != nil {
+		return err
+	}
+
+	fmt.Printf("generating %s\n", pdf)
+	if err := sh.Run("pandoc",
+		"--template="+template,
+		"--from", "markdown",
+		"--pdf-engine=xelatex",
+		md, "-o", pdf,
+	); err != nil {
+		return fmt.Errorf("pandoc: %w", err)
+	}
+	return nil
+}
+
 // Clean removes generated PNGs and PDFs.
 func Clean() error {
 	pngs, _ := filepath.Glob(filepath.Join(figuresDir, "*.png"))
