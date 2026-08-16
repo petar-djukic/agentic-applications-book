@@ -26,24 +26,39 @@ type demoStep struct {
 	Argv []string `yaml:"argv"`
 }
 
-// Demo runs every chapter-application's canned demo in manifest order.
+// Demo runs every implemented chapter-application's canned demo in
+// manifest order. A planned or partial entry is skipped and reported: it
+// has no demo.yaml yet by definition, and failing on its absence would
+// make the manifest's own planned status unusable.
 func Demo() error {
-	manifest, err := loadManifest(".")
+	ran, skipped, err := demoExamples(".")
 	if err != nil {
 		return err
 	}
-	ran := 0
+	fmt.Printf("demo: %d example(s) ran, %d skipped\n", ran, skipped)
+	return nil
+}
+
+func demoExamples(examplesRoot string) (ran, skipped int, err error) {
+	manifest, err := loadManifest(examplesRoot)
+	if err != nil {
+		return 0, 0, err
+	}
 	for _, entry := range manifest.Examples {
 		if entry.Kind != kindChapterApplication {
 			continue
 		}
-		if err := runEntryDemo(".", entry); err != nil {
-			return fmt.Errorf("demo %s: %w", entry.ID, err)
+		if entry.Status != statusImplemented {
+			fmt.Printf("demo: skip %s (status %s)\n", entry.ID, entry.Status)
+			skipped++
+			continue
+		}
+		if err := runEntryDemo(examplesRoot, entry); err != nil {
+			return ran, skipped, fmt.Errorf("demo %s: %w", entry.ID, err)
 		}
 		ran++
 	}
-	fmt.Printf("demo: %d example(s) ran\n", ran)
-	return nil
+	return ran, skipped, nil
 }
 
 func runEntryDemo(examplesRoot string, entry Entry) error {

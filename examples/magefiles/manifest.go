@@ -47,7 +47,15 @@ const (
 	kindCatalogFamily      = "catalog-family"
 )
 
-var validStatuses = map[string]bool{"planned": true, "partial": true, "implemented": true}
+const (
+	statusPlanned     = "planned"
+	statusPartial     = "partial"
+	statusImplemented = "implemented"
+)
+
+var validStatuses = map[string]bool{
+	statusPlanned: true, statusPartial: true, statusImplemented: true,
+}
 
 // loadManifest reads MANIFEST.yaml under examplesRoot.
 func loadManifest(examplesRoot string) (Manifest, error) {

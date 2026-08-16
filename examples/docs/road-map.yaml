@@ -10,4 +10,7 @@
 #     status: planned            # planned | partial | implemented
 id: road-map-examples
 title: Examples road-map
-examples: []
+examples:
+  - chapter: C-rlm
+    example: large-context-swarm
+    status: planned
