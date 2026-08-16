@@ -1,0 +1,18 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+#
+# Composition wrapper. The REST authority and the three write words are
+# the catalog knowledge-manager's; this profile references them by path
+# and declares only what it adds -- the query prefix and the model word
+# that turns retrieved chunks into a finding. Nothing here is a copy
+# (VISION G2, srd-large-context-swarm C10).
+name: rlm-worker
+machine: machine.yaml
+tools:
+  - tools.yaml
+tool_declarations:
+  - declarations.yaml
+  - llm.yaml
+  - ../../../../catalog/agents/knowledge-manager/memory-write/declarations.yaml
+rest_definitions:
+  - ../../../../catalog/agents/knowledge-manager/corpus-rest.yaml

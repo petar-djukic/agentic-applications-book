@@ -1,0 +1,14 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+#
+# Seven words in one pass: three to search, one to read, three to write.
+# The write three are the catalog memory-write block's, selected here
+# rather than redeclared.
+tools:
+  - embed_intent
+  - resolve_query_collection
+  - search_blackboard
+  - compose_finding
+  - embed_memory
+  - resolve_memory_collection
+  - write_memory

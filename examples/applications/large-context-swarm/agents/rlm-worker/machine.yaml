@@ -1,0 +1,151 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+name: rlm-worker
+purpose: |-
+  One intent in, one provenance-tagged finding on the blackboard, then
+  exit. The worker embeds its intent, resolves the per-task collection,
+  runs a filtered query against it, reads the returned chunks into a
+  finding, and writes that finding back tagged with source, agent, and
+  round.
+
+  This is the half of the swarm that is allowed to see corpus text. The
+  root is not: it collects what workers wrote by metadata alone. A
+  worker therefore reads freely and returns nothing to its caller except
+  the record id of what it stored, which is what keeps the corpus out of
+  the root's context window.
+
+  The caller supplies the intent through the --request file, whose
+  contents become the seed Result the first word selects from. A request
+  holding {"content", "collection", "where", "where_document",
+  "n_results", "id", "source", "agent", "round"} makes each field
+  addressable. The filters arrive as trusted request input rather than
+  as model-authored text, and the model is asked for one thing only:
+  the finding.
+realizes:
+  # srd-large-context-swarm, examples/docs/srd/
+  - C6   # this file set and this state shape
+  - C7   # all three query modes, in Searching
+  - C8   # exactly one finding, tagged, in Writing
+  - C9   # termination is process exit
+  - C10  # catalog blocks referenced, not copied
+  - I4   # provenance complete on the written entry
+invariants:
+  - REST authority lives in the catalog knowledge-manager's corpus-rest.yaml.
+  - MachineSpec owns sequencing; no word chooses the next word.
+  - The query carries all three filter modes -- vector, $contains, and metadata (C7).
+  - Exactly one finding is written per intent; Writing has one success edge (C8).
+  - The written entry carries source, agent, and round (I4).
+  - No embedding vector is authored by a model; vectors thread between words.
+  - The terminal Result carries the record id, never the finding text.
+  - Chroma and Ollama are external preconditions, checked by the caller.
+initial_state: Idle
+summary_signal: MemoryAdded
+budget:
+  command_timeout: 5m
+  # Seven words, no loop. The ceiling leaves room for one retry of a
+  # transient boundary failure without permitting a second pass.
+  max_iterations: 12
+states:
+  - name: Idle
+    meaning: Initial state before the intent arrives.
+  - name: EmbeddingQuery
+    meaning: The intent text is being embedded at Ollama for the vector query.
+  - name: ResolvingQueryCollection
+    meaning: The per-task collection is being create-or-got and the query carried forward.
+  - name: Searching
+    meaning: The filtered query is running -- vector similarity, $contains, and the metadata filter together.
+  - name: Reading
+    meaning: The returned chunks are being read into one finding.
+  - name: EmbeddingFinding
+    meaning: The finding is being embedded at Ollama for storage.
+  - name: ResolvingWriteCollection
+    meaning: The same collection is being create-or-got and the tagged record carried forward.
+  - name: Writing
+    meaning: The tagged finding is being written to the resolved collection.
+  - name: Succeeded
+    meaning: Terminal. The finding is stored and its record id is the run output.
+    run_status: succeeded
+  - name: Failed
+    meaning: Terminal. A boundary word or the model call failed.
+    run_status: failed
+terminal_states:
+  - Succeeded
+  - Failed
+signals:
+  - name: Seed
+    trigger: Loop initialization with the request intent.
+  - name: QueryEmbedded
+    trigger: Ollama returned an embedding vector for the intent.
+  - name: CollectionReady
+    trigger: The named collection was create-or-got and its id resolved.
+  - name: QueryResponded
+    trigger: Chroma returned the filtered result set.
+  - name: LLMResponded
+    trigger: The model returned the finding text.
+  - name: MemoryEmbedded
+    trigger: Ollama returned an embedding vector for the finding.
+  - name: MemoryAdded
+    trigger: Chroma stored the tagged record.
+  - name: CommandError
+    trigger: Runtime, REST, or model boundary infrastructure failed.
+transitions:
+  - state: Idle
+    signal: Seed
+    next: EmbeddingQuery
+    action: embed_intent
+
+  - state: EmbeddingQuery
+    signal: QueryEmbedded
+    next: ResolvingQueryCollection
+    action: resolve_query_collection
+  - state: EmbeddingQuery
+    signal: CommandError
+    next: Failed
+
+  - state: ResolvingQueryCollection
+    signal: CollectionReady
+    next: Searching
+    action: search_blackboard
+  - state: ResolvingQueryCollection
+    signal: CommandError
+    next: Failed
+
+  - state: Searching
+    signal: QueryResponded
+    next: Reading
+    action: compose_finding
+  - state: Searching
+    signal: CommandError
+    next: Failed
+
+  # One edge out of Reading, so one intent yields one finding (C8).
+  - state: Reading
+    signal: LLMResponded
+    next: EmbeddingFinding
+    action: embed_memory
+  - state: Reading
+    signal: CommandError
+    next: Failed
+
+  - state: EmbeddingFinding
+    signal: MemoryEmbedded
+    next: ResolvingWriteCollection
+    action: resolve_memory_collection
+  - state: EmbeddingFinding
+    signal: CommandError
+    next: Failed
+
+  - state: ResolvingWriteCollection
+    signal: CollectionReady
+    next: Writing
+    action: write_memory
+  - state: ResolvingWriteCollection
+    signal: CommandError
+    next: Failed
+
+  - state: Writing
+    signal: MemoryAdded
+    next: Succeeded
+  - state: Writing
+    signal: CommandError
+    next: Failed
