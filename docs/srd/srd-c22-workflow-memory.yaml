@@ -1,0 +1,27 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+#
+# Placeholder per the framework README: the Create-tier gate (P-4)
+# blocks drafting until the mechanism lands. What is already known is
+# captured so unblocking is a fill-in, not a restart.
+meta:
+  id: srd-c22
+  chapter: C22
+  title: "The Agent That Files Its Own Playbook"
+  file: 22-workflow-memory.md
+  series_piece: 12
+status: blocked
+blocked_on:
+  mechanism: "skill libraries as a RAG corpus; zero new agents"
+  state: "not landed"
+  authority: docs/road-map.yaml
+paper:
+  - title: "Agent Workflow Memory (2409.07429), Voyager (2305.16291)"
+    authors_year: "Wang, Mao, et al. (2024). Agent Workflow Memory; Wang, Xie, et al. (2023). Voyager"
+claim_under_test: >
+  Captured at unblocking, from the chapter stub and the landed
+  mechanism; the stub's claim stands until then.
+constitutions: [P-4, V-M1, A-1]
+acceptance:
+  - the placeholder is replaced by a full SRD when the road-map's
+    create_gate.state reads landed

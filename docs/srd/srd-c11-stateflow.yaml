@@ -1,0 +1,60 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+meta:
+  id: srd-c11
+  chapter: C11
+  title: "The Paper That Says What My Whole Repo Says"
+  file: 11-stateflow.md
+  series_piece: 2
+section_goal: establish the book's thesis through StateFlow -- control flow as declared states, and the four decisions the paper never specifies
+paper:
+  - title: "StateFlow: Enhancing LLM Task-Solving through State-Driven Workflows"
+    authors_year: "Wu, Yue, Zhang, Wang, Wu (2024)"
+    arxiv: "2403.11322"
+claim_under_test: >
+  States own control flow and the model fills states. Implementing it
+  for real forces four decisions the paper never specifies: a closed
+  signal alphabet, explicit budgets, distinguished terminal states, and
+  who owns the exit.
+machine_paths:
+  - "declarative-agents applications/catalog/agents/executor/machine.yaml -- the specimen, for size"
+  - "declarative-agents applications/chatbot-mesh/agents/chatbot/request-machine.yaml -- the this-scales exhibit"
+modification:
+  change: "remove one signal from a machine's alphabet"
+  run: "profile validation, then the canned demo"
+  expect: "validation rejects the machine naming the orphaned transition"
+  because: "the alphabet is closed and checked, which is the thesis made enforceable"
+verdict_type: holds with residue
+create_pointer: "declare a two-state machine for a task currently handled by a prompt, naming profile.yaml, machine.yaml, and the one tool selection it needs"
+goals:
+  - id: G1.8
+    goal: The reader accepts machines-own-sequencing as an engineering claim with a running artifact behind it.
+  - id: G3.6
+    goal: The reader can name the four unspecified decisions in any state-driven agent paper.
+objective: >
+  Pair the paper's own argument with a running machine, then spend the
+  longest section on the four decisions the YAML answers that the paper
+  does not.
+prior_material:
+  - path: 11-stateflow.md
+    offers: claim under test, already phrased
+  - path: "substack brainstorm/implement-stateflow.md"
+    offers: message, rationale, the NeMo Guardrails comparison paragraph
+citations:
+  - id: stateflow-2024
+    role: anchor
+    gap: "add to references.yaml (arXiv 2403.11322)"
+constitutions: [V-M1, V-S4, A-1, A-7]
+content:
+  - say: the paper's mechanism, one paragraph before any YAML
+  - say: mapping table, executor machine excerpt under 40 lines
+  - say: the four forced decisions, one beat each
+  - say: what aged -- state-driven control became routine after the paper
+  - say: exercise, create pointer, takeaway question
+links:
+  requires: [C3, C9]
+  supports: [C12]
+gaps:
+  - references.yaml lacks the paper id
+acceptance:
+  - the four decisions each tie to a named construct in the excerpt (A-7)

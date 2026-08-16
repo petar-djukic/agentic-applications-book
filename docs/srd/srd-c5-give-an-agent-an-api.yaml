@@ -1,0 +1,35 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+meta:
+  id: srd-c5
+  chapter: C5
+  title: "How to Give an Agent an API"
+  file: 05-give-an-agent-an-api.md
+  paper_fields: not-applicable
+section_goal: show a REST endpoint becoming an agent tool by declaration alone — typed inputs, response mapping, declared side effects, no glue code
+goals:
+  - id: G1.3
+    goal: The reader can wire an existing API into an agent as a declared operation and say where authority lives.
+  - id: G3.3
+    goal: The reader can trace a request body from declared params through input_mapping to the wire.
+objective: >
+  Take one real endpoint from the examples' REST vocabulary and follow it
+  end to end: operation declaration, body schema, threading, response
+  mapping, and the network allowlist that bounds it.
+prior_material:
+  - path: examples/catalog/agents/knowledge-manager/corpus-rest.yaml
+    offers: a complete REST vocabulary with auth, limits, allowlists, and threading idioms
+citations: []
+constitutions: [V-G4, A-4, N-5]
+content:
+  - say: a tool is a declaration; the runtime is the client
+  - say: the operation shape — method, path, body schema, success signal, response mapping
+  - say: threading — previous_result, input_mapping, carry_forward, and why single-hop forces word order
+  - say: the boundary — allowlisted hosts and ports, declared limits
+links:
+  requires: [C3]
+  supports: [C6, C9]
+gaps:
+  - the chapter is a stub; the article draft supplies the arc
+acceptance:
+  - the walked endpoint is extracted from the catalog copy's actual file

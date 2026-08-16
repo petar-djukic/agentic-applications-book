@@ -1,0 +1,27 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+#
+# Placeholder per the framework README: the Create-tier gate (P-4)
+# blocks drafting until the mechanism lands. What is already known is
+# captured so unblocking is a fill-in, not a restart.
+meta:
+  id: srd-c19
+  chapter: C19
+  title: "Sample Five Times, Keep the Agreement"
+  file: 19-self-consistency.md
+  series_piece: 9
+status: blocked
+blocked_on:
+  mechanism: "fan-out plus a vote over existing for_each and join machinery"
+  state: "for_each and join exist upstream; the vote composition is the landing work"
+  authority: docs/road-map.yaml
+paper:
+  - title: "Self-Consistency (2203.11171)"
+    authors_year: "Chen, Wang, et al. (2022). Self-Consistency Improves Chain of Thought Reasoning in Language Models"
+claim_under_test: >
+  Captured at unblocking, from the chapter stub and the landed
+  mechanism; the stub's claim stands until then.
+constitutions: [P-4, V-M1, A-1]
+acceptance:
+  - the placeholder is replaced by a full SRD when the road-map's
+    create_gate.state reads landed

@@ -1,0 +1,65 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+meta:
+  id: srd-c16
+  chapter: C16
+  title: "A Judge You Can Cross-Examine"
+  file: 16-llm-as-judge.md
+  series_piece: 7
+section_goal: add to the judging papers what a paper cannot enforce -- hash-gated inputs, schema-required rubrics, generator isolation
+paper:
+  - title: "Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena"
+    authors_year: "Zheng, Chiang, Sheng, et al. (2023)"
+    arxiv: "2306.05685"
+  - title: "CRITIC: Large Language Models Can Self-Correct with Tool-Interactive Critiquing"
+    authors_year: "Gou, Shao, Gong, et al. (2023)"
+    arxiv: "2305.11738"
+claim_under_test: >
+  A judge you can trust proves it evaluated the exact bytes it was
+  given, cannot emit a verdict from an incomplete rubric, and never sees
+  the generator's reasoning -- properties the machine enforces and a
+  paper can only recommend.
+machine_paths:
+  - # prose-editor was cleaved out of the fork on 2026-08-15 (fork GH-43).
+  - "petar-djukic/prose-editor agents/voice-critic/machine.yaml -- hash gates, six-category schema-required rubric, independence invariant"
+  - "declarative-agents applications/catalog/agents/critic/machine.yaml and point machine -- the tool critic that never calls an LLM"
+modification:
+  change: "hand the judge a candidate whose hash does not match the gate"
+  run: "the voice-critic demo"
+  expect: "the run refuses at the hash gate; no verdict is emitted"
+  because: "the gate is a transition precondition, not a prompt instruction"
+verdict_type: holds with residue
+create_pointer: "add a seventh rubric category with its schema field, naming the declaration and the parse gate that make it required"
+goals:
+  - id: G1.13
+    goal: The reader can name the three enforceable judge properties and the construct carrying each.
+  - id: G5.4
+    goal: The reader asks of any judging paper -- which of its recommendations could a machine enforce.
+objective: >
+  Pair the papers' worries with the two critics' enforcement, one
+  property per excerpt.
+prior_material:
+  - path: 16-llm-as-judge.md
+    offers: claim under test
+  - path: "substack brainstorm/implement-llm-as-judge.md"
+    offers: message, both critic paths, the never-calls-an-LLM contrast
+citations:
+  - id: llm-as-judge-2023
+    role: anchor
+    gap: "add to references.yaml (arXiv 2306.05685)"
+  - id: critic-2023
+    role: anchor
+    gap: "add to references.yaml (arXiv 2305.11738)"
+constitutions: [V-M1, V-S3, A-1, A-6]
+content:
+  - say: the bias and rubric worries, briefly and with respect
+  - say: hash gates, schema-required rubric, independence -- one excerpt each
+  - say: the contrast critic that needs no model at all
+  - say: exercise, create pointer, takeaway question
+links:
+  requires: [C15]
+  supports: [C17]
+gaps:
+  - references.yaml lacks both paper ids
+acceptance:
+  - each enforced property ties to a construct in an excerpt (A-7)

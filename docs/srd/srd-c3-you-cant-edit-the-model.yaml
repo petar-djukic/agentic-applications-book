@@ -1,0 +1,44 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+meta:
+  id: srd-c3
+  chapter: C3
+  title: "You Can't Edit the Model"
+  file: 03-you-cant-edit-the-model.md
+  paper_fields: not-applicable
+section_goal: establish that a deployed agent's editable surface is everything except the model, and that declaring control flow as data is what makes the rest editable
+goals:
+  - id: G1.1
+    goal: The reader can identify which parts of a deployed agent they can change and which they rent.
+  - id: G3.1
+    goal: The reader can write an agent's control flow as a transition table and predict behavior from the file without running it.
+  - id: G2.1
+    goal: The reader can list the checks a loader runs against a transition table before the agent starts.
+objective: >
+  Contrast the rented model with the owned harness, move the control flow
+  into a machine file step by step, and close on what the move buys when
+  the model is swapped.
+prior_material:
+  - path: 03-you-cant-edit-the-model.md
+    offers: the full draft; this SRD was written against it and any revision honors its section arc
+  - path: examples/catalog/agents/knowledge-manager/memory-write/machine.yaml
+    offers: a small real machine for the reading exercise
+citations:
+  - id: stateflow-2024
+    role: anchor
+    note: forward pointer to C11, where the argument gets its paper
+    gap: "confirm id in references.yaml or add"
+constitutions: [V-G4, A-4, N-5]
+content:
+  - say: the part you cannot open — weights are rented, everything else is owned
+  - say: where control flow lives across harness styles, and what each style costs at model swap
+  - say: control flow as data — the transition table, states, signals, budgets
+  - say: checking the machine before it runs — the loader's static checks
+  - say: what the move buys when the model changes
+links:
+  requires: []
+  supports: [C4, C9, C11]
+gaps: []
+acceptance:
+  - the drafted chapter's eight sections map onto the content list
+  - every excerpt is an extracted listing once listings bind (A-4)

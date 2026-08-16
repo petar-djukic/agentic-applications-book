@@ -1,0 +1,35 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+meta:
+  id: srd-c7
+  chapter: C7
+  title: "Tools Are Words, Not Sentences"
+  file: 07-tools-are-words-not-sentences.md
+  paper_fields: not-applicable
+section_goal: argue tool granularity — small orthogonal words compose into workflows; monolithic tools force the model to memorize incantations
+goals:
+  - id: G1.5
+    goal: The reader can judge a tool's granularity by whether the machine or the model owns its composition.
+  - id: G5.1
+    goal: The reader asks of any tool set — are these words the machine sequences, or sentences the model must recall.
+objective: >
+  Contrast one capability expressed as three composable words against the
+  same capability as one monolith, and show what each costs in machine
+  legibility, undo granularity, and reuse.
+prior_material:
+  - path: examples/catalog/agents/knowledge-manager/memory-write/
+    offers: the worked example — embed, resolve, write as three words the machine sequences
+citations: []
+constitutions: [V-G4, A-7]
+content:
+  - say: words compose, sentences memorize — the claim in one paragraph
+  - say: the three-word write path, and why the machine owns its order
+  - say: the monolith alternative and its costs
+  - say: granularity heuristics — one side effect per word, one signal alphabet per machine
+links:
+  requires: [C6]
+  supports: [C9]
+gaps:
+  - the chapter is a stub; the article draft supplies the arc
+acceptance:
+  - the worked example extracts from the catalog copy

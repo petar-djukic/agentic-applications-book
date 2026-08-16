@@ -1,0 +1,57 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+meta:
+  id: srd-c12
+  chapter: C12
+  title: "ReAct Is Fifteen Lines. The Other Forty-Five Are the Job."
+  file: 12-react.md
+  series_piece: 3
+section_goal: show the famous loop running, and locate the engineering in the exits the paper never wrote
+paper:
+  - title: "ReAct: Synergizing Reasoning and Acting in Language Models"
+    authors_year: "Yao, Zhao, Yu, Du, Shafran, Narasimhan, Cao (2022)"
+    arxiv: "2210.03629"
+claim_under_test: >
+  The paper's loop trusts the model to exit honestly. The machine
+  version routes the model's "done" into a build-lint-test chain it
+  cannot talk its way past -- and that chain, not the loop, is where
+  the engineering lives.
+machine_paths:
+  - "declarative-agents applications/catalog/agents/executor/machine.yaml -- the Composing/Parsing loop with $tool dispatch; ParseFailed -> Composing (report_parse_error); EditDone -> Composing (nudge_reread); TaskCompleted -> ValidatingBuild -> ValidatingLint -> ValidatingTest"
+modification:
+  change: "remove the ValidatingTest edge so TaskCompleted exits after lint"
+  run: "the executor demo on a task whose tests fail"
+  expect: "the run reports success on code its own tests reject"
+  because: "the exit chain, not the loop, carries the honesty"
+verdict_type: holds with residue
+create_pointer: "add a fourth validator to the exit chain -- a vet step for a new language -- naming the machine edge and the exec declaration to add"
+goals:
+  - id: G1.9
+    goal: The reader can separate the fifteen-line loop from the exit machinery around it.
+  - id: G3.7
+    goal: The reader can trace what happens when the model's output parses to no signal.
+objective: >
+  Show the loop excerpt whole, then walk the three exit edges the paper
+  has no box for.
+prior_material:
+  - path: 12-react.md
+    offers: claim under test
+  - path: "substack brainstorm/implement-react.md"
+    offers: message, the three named edges
+citations:
+  - id: react-2022
+    role: anchor
+    gap: "add to references.yaml (arXiv 2210.03629)"
+constitutions: [V-M1, V-S4, A-1, A-7]
+content:
+  - say: the loop in one excerpt, honestly small
+  - say: the parse-failure edge, the reread nudge, the validation chain
+  - say: what aged -- tool-use loops became infrastructure
+  - say: exercise, create pointer, takeaway question
+links:
+  requires: [C11]
+  supports: [C13]
+gaps:
+  - references.yaml lacks the paper id
+acceptance:
+  - the modification's predicted failure is demonstrated, not asserted (A-6)

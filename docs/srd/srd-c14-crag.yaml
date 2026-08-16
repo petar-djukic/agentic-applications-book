@@ -1,0 +1,65 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+meta:
+  id: srd-c14
+  chapter: C14
+  title: "Retrieval That Admits It Found Nothing"
+  file: 14-crag.md
+  series_piece: 5
+section_goal: run evaluate-then-correct and adaptive routing as declared transitions, and add the terminal the papers never define
+paper:
+  - title: "Corrective Retrieval Augmented Generation"
+    authors_year: "Yan, Gu, Zhu, Ling (2024)"
+    arxiv: "2401.15884"
+  - title: "Adaptive-RAG: Learning to Adapt Retrieval-Augmented LLMs through Question Complexity"
+    authors_year: "Jeong, Baek, Cho, Hwang, Park (2024)"
+    arxiv: "2403.14403"
+claim_under_test: >
+  Retrieval should grade its own evidence. The honest improvement is a
+  terminal state the papers never define: when refinement still finds
+  nothing, the machine says so instead of generating over weak evidence.
+machine_paths:
+  # prose-editor was cleaved out of the fork on 2026-08-15 (fork GH-43);
+  # the application lives standalone with its history.
+  - "petar-djukic/prose-editor agents/specialist-editor/machine.yaml -- the grounding-sufficiency loop, bounded at one refinement, InsufficientGrounding terminal"
+  - "declarative-agents applications/chatbot-mesh/agents/chatbot/request-machine.yaml -- source routing with degrade-to-all fallback"
+modification:
+  change: "raise the refinement bound from one to three"
+  run: "the specialist-editor demo on a query its corpus cannot answer"
+  expect: "three refinements, then the same InsufficientGrounding terminal"
+  because: "the terminal is the honesty; the bound only prices the search"
+verdict_type: holds with residue
+create_pointer: "route the InsufficientGrounding terminal into a human-question tool instead of an error, naming the transition and the declaration to add"
+goals:
+  - id: G1.11
+    goal: The reader can express evidence-grading as transitions rather than prompt instructions.
+  - id: G3.8
+    goal: The reader can add an honest-failure terminal to a retrieval machine.
+objective: >
+  Map both papers onto the two machines, then argue the found-nothing
+  terminal as the rebuild's contribution.
+prior_material:
+  - path: 14-crag.md
+    offers: claim under test
+  - path: "substack brainstorm/implement-crag.md"
+    offers: message, both exhibit paths, the bounded-refinement pointer
+citations:
+  - id: crag-2024
+    role: anchor
+    gap: "add to references.yaml (arXiv 2401.15884)"
+  - id: adaptive-rag-2024
+    role: anchor
+    gap: "add to references.yaml (arXiv 2403.14403)"
+constitutions: [V-M1, V-S4, A-1, A-6]
+content:
+  - say: both mechanisms in plain terms
+  - say: the grounding loop excerpt; the routing excerpt
+  - say: the terminal the papers never drew
+  - say: exercise, create pointer, takeaway question
+links:
+  requires: [C13]
+  supports: [C15]
+gaps:
+  - references.yaml lacks both paper ids
+acceptance:
+  - the InsufficientGrounding terminal is shown reached, not described (A-6)

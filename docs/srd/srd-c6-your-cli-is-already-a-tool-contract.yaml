@@ -1,0 +1,35 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+meta:
+  id: srd-c6
+  chapter: C6
+  title: "Your CLI Is Already a Tool Contract"
+  file: 06-your-cli-is-already-a-tool-contract.md
+  paper_fields: not-applicable
+section_goal: map CLI conventions — typed flags, stdin/stdout, exit codes — onto the tool contract, so a well-behaved utility needs declaration, not wrapping
+goals:
+  - id: G1.4
+    goal: The reader can state which parts of the tool contract a conventional CLI already satisfies and which the declaration adds.
+  - id: G3.4
+    goal: The reader can declare an exec tool with stdin selection and predict its emitted signals from exit codes.
+objective: >
+  Read an exec declaration against the conventions it rides on: argv as
+  typed inputs, stdin_source as parameter threading, exit codes as the
+  signal map, stdout as the structured result.
+prior_material:
+  - path: examples/applications/large-context-swarm/agents/rlm-root/declarations.yaml
+    offers: two exec words in production use — jq as a pure transform, sh as a dispatch boundary
+citations: []
+constitutions: [V-G4, A-4]
+content:
+  - say: the conventions — flags, streams, exit codes — and what each maps to
+  - say: the exec declaration shape, stdin_source and stdin_max_bytes
+  - say: exit codes to signals — ToolDone, ToolFailed, CommandError
+  - say: where the analogy stops — side effects and undo still need declaring
+links:
+  requires: [C5]
+  supports: [C7]
+gaps:
+  - the chapter is a stub; the article draft supplies the arc
+acceptance:
+  - both exec examples extract from shipped declarations

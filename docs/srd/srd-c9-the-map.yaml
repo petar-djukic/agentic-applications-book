@@ -1,0 +1,59 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+meta:
+  id: srd-c9
+  chapter: C9
+  title: "CoALA With a File Path in Every Box"
+  file: 09-the-map.md
+  series_piece: 1
+section_goal: put a file path in every box of CoALA's taxonomy, giving the rest of the book its vocabulary
+paper:
+  - title: "Cognitive Architectures for Language Agents"
+    authors_year: "Sumers, Yao, Narasimhan, Griffiths (2023)"
+    arxiv: "2309.02427"
+claim_under_test: >
+  CoALA's taxonomy -- memory kinds, internal versus external actions, a
+  decision procedure selecting among them -- is complete enough that
+  every box maps to a concrete file in one running repository, and
+  anything without a file is a finding about the taxonomy.
+machine_paths:
+  - "declarative-agents: one profile per box -- machines as decision procedures, tool declarations as external actions, corpus collections as semantic memory, command state as working memory"
+  - "examples/catalog/agents/knowledge-manager/ -- the memory boxes made concrete"
+modification:
+  change: "reclassify one tool from external to internal action by moving its side-effect declaration"
+  run: "the examples audit and the profile validation"
+  expect: "the mapping table's box moves; nothing else changes"
+  because: "the taxonomy is descriptive; the files are the commitment"
+verdict_type: holds with residue
+create_pointer: "map a memory kind CoALA names that the repo lacks -- episodic memory as a run-transcript collection -- naming the corpus family and profile to add"
+goals:
+  - id: G1.7
+    goal: The reader can name each CoALA box and the file that realizes it.
+  - id: G5.2
+    goal: The reader asks of any agent paper -- which box is this, and what file would it be.
+objective: >
+  Walk the taxonomy box by box, each with its file path and a one-line
+  excerpt, then name what has no file and what that says.
+prior_material:
+  - path: 09-the-map.md
+    offers: the paper summary and framing
+  - path: "substack series plan, piece 1"
+    offers: the series contract this chapter opens
+citations:
+  - id: coala-2023
+    role: anchor
+    gap: "add to references.yaml (arXiv 2309.02427)"
+constitutions: [V-M1, V-S3, A-1, N-6]
+content:
+  - say: the taxonomy in one figure, boxes labeled with paths
+  - say: memory kinds to storage files
+  - say: actions to tool declarations, internal versus external
+  - say: decision procedures to machines
+  - say: the empty boxes, honestly
+links:
+  requires: [C3, C5, C7]
+  supports: [C11, C12, C13, C14, C15, C16, C17]
+gaps:
+  - references.yaml lacks every paper id; update-references pass needed
+acceptance:
+  - every box in the figure carries a path that exists at the pinned release
