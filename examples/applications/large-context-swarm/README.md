@@ -24,13 +24,22 @@ contract in
 [`docs/srd/srd-knowledge-manager.yaml`](../../docs/srd/srd-knowledge-manager.yaml)).
 This module references them; it copies nothing.
 
-`agents/rlm-worker/` is here: one intent in, a filtered query across
-vector, `$contains`, and metadata, one provenance-tagged finding out,
-then exit. It is the half of the swarm allowed to read corpus text.
+Both profiles are here.
+
+`agents/rlm-worker/` takes one intent, runs a filtered query across
+vector, `$contains`, and metadata, writes one provenance-tagged finding,
+and exits. It is the half of the swarm allowed to read corpus text.
+
+`agents/rlm-root/` plans intents, dispatches a worker per intent through
+a sequential `for_each`, reads the round's findings back as record ids
+and metadata, and reduces them into a `Final` entry. Its `collect_findings`
+word drops the `documents` field of the query response, which is the
+line that makes the whole arrangement mean anything —
+[#32](https://github.com/petar-djukic/agentic-applications-book/issues/32)
+tracks making that structural rather than declared.
 
 | Arriving in | Content |
 |---|---|
-| [#31](https://github.com/petar-djukic/agentic-applications-book/issues/31) | `agents/rlm-root/` — planning, fan-out, collection by metadata alone, reduction to `Final` |
 | [#25](https://github.com/petar-djukic/agentic-applications-book/issues/25) | `testdata/` fixture corpus and `demo.yaml` |
 
 Deployment surface — Helm, kind, lifecycle-manager actors, Job workers —

@@ -1,0 +1,518 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+#
+# The planning, dispatch, and collection words. The three write words
+# the Final entry goes through are the catalog memory-write block's and
+# are selected in tools.yaml, not redeclared here (C10).
+tools:
+  - name: seed_round
+    type: builtin
+    init: compose
+    visibility: internal
+    category: response
+    description: Publish the starting round number as an addressable command-state value.
+    problem: The round has to be visible to the collect filter and the bound predicate before the first plan runs.
+    goals:
+      - Render the first round as command state the later words address.
+    requirements:
+      input:
+        - The starting round is configuration, not runtime input.
+      output:
+        - Output is a JSON object whose output field holds the round number as a string.
+      errors:
+        - Rendering a configured constant does not fail.
+    non_goals:
+      - Does not read the request or any model text.
+    parameters: {type: object, properties: {}, additionalProperties: false}
+    emits: [RoundSeeded, CommandError]
+    output:
+      description: The round counter.
+      schema:
+        type: object
+        properties:
+          output: {type: string}
+        required: [output]
+    side_effects: []
+    reversibility: {classification: reversible}
+    undo: {strategy: noop, description: Publishing a constant changes no external state.}
+    relationships:
+      before: [plan_intents, increment_round]
+    config:
+      signal: RoundSeeded
+      inputs: {}
+      template: |-
+        {"output": "1"}
+
+  - name: capture_plan
+    type: builtin
+    init: compose
+    visibility: internal
+    category: response
+    description: Shape the adjacent raw plan reply into an addressable JSON response field.
+    problem: parse_structured reads a command-state object path, while invoke_llm emits raw model text.
+    goals:
+      - Capture only the adjacent current Result.
+      - JSON-escape model text so it stays data and cannot author structure or selectors.
+    requirements:
+      input:
+        - response must be the immediately preceding plan_intents raw Result output selected as $.
+      output:
+        - Output is one JSON object whose response field is the escaped raw model string.
+      errors:
+        - Compose or serialization failures emit CommandError.
+    non_goals:
+      - Does not parse, repair, trust, or execute model text.
+    parameters: {type: object, properties: {}, additionalProperties: false}
+    emits: [PlanCaptured, CommandError]
+    output:
+      description: Addressable raw plan response.
+      schema:
+        type: object
+        properties:
+          response: {type: string}
+        required: [response]
+        additionalProperties: false
+    side_effects: []
+    reversibility: {classification: reversible}
+    undo: {strategy: noop, description: Shaping model text changes no external state.}
+    relationships:
+      after: [plan_intents]
+      before: [parse_plan]
+    config:
+      signal: PlanCaptured
+      inputs:
+        response: $.
+      template: |-
+        {"response": {{ json response }}}
+
+  - name: parse_plan
+    type: builtin
+    init: parse_structured
+    visibility: internal
+    category: word
+    description: Parse the captured plan as an intents array.
+    problem: Model text must be structurally valid before anything is dispatched over it.
+    goals:
+      - Validate exactly the shape the fan-out iterates.
+      - Route malformed content to ParseFailed rather than to a guessed plan.
+    requirements:
+      input:
+        - Source is the captured response string from capture_plan.
+      output:
+        - Valid output contains intents as an array of strings.
+      errors:
+        - Malformed or schema-invalid content emits ParseFailed.
+    non_goals:
+      - Does not repair JSON.
+      - Does not supply a default plan; an unparseable plan fails the run (C2).
+    parameters: {type: object, properties: {}, additionalProperties: false}
+    emits: [PlanParsed, ParseFailed, CommandError]
+    output:
+      description: Validated sub-intents.
+      schema: {type: object}
+    side_effects: []
+    reversibility: {classification: reversible}
+    undo: {strategy: noop, description: Parsing changes no external state.}
+    relationships:
+      after: [capture_plan]
+      before: [dispatch_worker]
+    config:
+      source: $from(captured_plan).response
+      signal: PlanParsed
+      schema:
+        type: object
+        additionalProperties: false
+        required: [intents]
+        properties:
+          intents:
+            type: array
+            minItems: 2
+            items: {type: string}
+
+  - name: dispatch_worker
+    type: builtin
+    init: self_invoke
+    visibility: internal
+    category: boundary
+    description: Run one rlm-worker against one intent through the child-agent boundary.
+    problem: |
+      The corpus is larger than one context window, so the read has to be
+      split. Splitting it across child runs rather than across turns of
+      one run is what keeps the parent's context flat: each worker holds
+      its own passages and this machine never sees them.
+    goals:
+      - Dispatch the worker profile once per parsed intent.
+      - Leave each worker's finding on the blackboard rather than returning it here.
+    requirements:
+      input:
+        - The intent from the for_each binding and the collection from the request.
+      output:
+        - Child completion signal; the finding itself is read back from the blackboard.
+      errors:
+        - A failed child is a handled item outcome so the remaining intents still run.
+    non_goals:
+      - Does not read the child's findings into this machine's Result.
+      - Does not retry a failed worker; the round loop is the retry.
+    parameters: {type: object, properties: {}, additionalProperties: false}
+    emits: [ToolDone, ToolFailed, CommandError]
+    output:
+      description: Child worker completion.
+      schema: {type: string}
+    side_effects:
+      - kind: child_process
+        target: rlm_worker
+        state: worker_running
+      - kind: external_api
+        target: chroma.records
+        state: records_added
+        description: The child writes its finding to the blackboard collection.
+    reversibility:
+      classification: compensatable
+    undo:
+      strategy: compensating_action
+      description: Delete the records the dispatched workers wrote for this round.
+      payload: boundary_compensation
+      captures: [collection, round]
+    errors:
+      - signal: ToolFailed
+        condition: The worker exits unsuccessfully.
+        state_after_failure: That intent has no finding on the blackboard; the others are unaffected.
+    relationships:
+      after: [parse_plan]
+      before: [compose_collect_query]
+    config:
+      profile: agents/rlm-worker/profile.yaml
+      request_from: $from(dispatch).intent
+      output_from: $from(parsed_plan).collection
+
+  - name: compose_collect_query
+    type: builtin
+    init: compose
+    visibility: internal
+    category: response
+    description: Compose the derived-entry query for this round from the request filters and the round counter.
+    problem: |
+      The collect query has to select exactly what the workers just
+      wrote. Filtering on source and round does that; filtering on
+      similarity alone would pull ingested corpus records back into this
+      machine, which is the one thing it must not do.
+    goals:
+      - Render the where filter as source derived and the current round.
+      - Carry the request's anchor term and result count into the query.
+    requirements:
+      input:
+        - The round from command state and the collection, anchor, and count from the request.
+      output:
+        - One object shaped for the embed and query words: content, collection, where, where_document, n_results.
+      errors:
+        - Compose or serialization failures emit CommandError.
+    non_goals:
+      - Does not author filter values from model text.
+      - Does not widen the filter to source corpus.
+    parameters: {type: object, properties: {}, additionalProperties: false}
+    emits: [CollectQueryComposed, CommandError]
+    output:
+      description: The composed derived-entry query.
+      schema:
+        type: object
+        properties:
+          content: {type: string}
+          collection: {type: string}
+          where: {type: object}
+          where_document: {type: object}
+          n_results: {type: integer}
+        required: [content, collection, where, where_document, n_results]
+    side_effects: []
+    reversibility: {classification: reversible}
+    undo: {strategy: noop, description: Composing a query changes no external state.}
+    relationships:
+      after: [dispatch_worker]
+      before: [embed_collect]
+    config:
+      signal: CollectQueryComposed
+      inputs:
+        task: $.task
+        collection: $.collection
+        anchor: $.anchor
+        n_results: $.n_results
+        round: $from(round_count).output
+      template: |-
+        {"content": {{ json task }},
+         "collection": {{ json collection }},
+         "where": {"source": "derived", "round": {{ round }}},
+         "where_document": {"$contains": {{ json anchor }}},
+         "n_results": {{ n_results }}}
+
+  - name: embed_collect
+    type: builtin
+    init: rest_client_invoke
+    visibility: internal
+    category: boundary
+    description: Embed the task text for the collect query and carry the filters forward.
+    problem: The filtered query needs a vector, and the only text this machine holds is its own task.
+    goals:
+      - Embed the task text, which is the root's own input and never corpus content.
+      - Carry the collection and the three filters forward.
+    requirements:
+      input:
+        - Selected from the composed collect query.
+      output:
+        - Output includes the mapped embedding vector and the carried query fields.
+      errors:
+        - Network, timeout, schema, and mapping failures emit CommandError.
+    non_goals:
+      - Does not embed any retrieved content.
+      - Does not author or alter the embedding vector.
+    parameters:
+      type: object
+      properties:
+        content: {type: string}
+        collection: {type: string}
+        where: {type: object}
+        where_document: {type: object}
+        n_results: {type: integer}
+    emits: [QueryEmbedded, CommandError]
+    output:
+      description: Mapped Ollama embedding with the carried query fields.
+      schema:
+        type: object
+        properties:
+          mapped: {type: object}
+          carried: {type: object}
+    side_effects:
+      - kind: external_api
+        target: ollama.embeddings
+        state: read_only
+    reversibility: {classification: reversible}
+    undo: {strategy: noop, description: Computing an embedding does not mutate state.}
+    errors:
+      - signal: CommandError
+        condition: The Ollama embeddings call fails on network, timeout, schema, or mapping.
+        state_after_failure: No embedding is produced and no state changes.
+    relationships:
+      after: [compose_collect_query]
+      before: [resolve_collect_collection]
+    config:
+      rest_ref: ollama
+      operation: embed_memory_query
+
+  - name: resolve_collect_collection
+    type: builtin
+    init: rest_client_invoke
+    visibility: internal
+    category: boundary
+    description: Create-or-get the per-task collection and carry the collect query forward.
+    problem: Single-hop threading means the resolved collection id must reach the query through this word.
+    goals:
+      - Create-or-get the collection the request named.
+      - Carry the query embedding and filters forward from the embed Result.
+    requirements:
+      input:
+        - Collection name, query embedding, and filters from the previous embed Result.
+      output:
+        - Output includes the mapped collection id and the carried query fields.
+      errors:
+        - Network, timeout, schema, and mapping failures emit CommandError.
+    non_goals:
+      - Does not configure a server-side embedding function.
+    parameters:
+      type: object
+      properties:
+        collection_name: {type: string}
+        query_embeddings: {type: array}
+        where: {type: object}
+        where_document: {type: object}
+        n_results: {type: integer}
+    emits: [CollectionReady, CommandError]
+    output:
+      description: Mapped Chroma collection id with the carried query fields.
+      schema:
+        type: object
+        properties:
+          mapped: {type: object}
+          carried: {type: object}
+    side_effects:
+      - kind: external_api
+        target: chroma.collection
+        state: read_only
+        description: Create-or-get is idempotent for a stable collection name.
+    reversibility: {classification: reversible}
+    undo: {strategy: noop, description: Create-or-get is idempotent for a stable collection name.}
+    errors:
+      - signal: CommandError
+        condition: The Chroma create-or-get collection call fails on network, timeout, schema, or mapping.
+        state_after_failure: The collection id is unresolved; create-or-get is idempotent so there is no net change.
+    relationships:
+      after: [embed_collect]
+      before: [collect_findings]
+    config:
+      rest_ref: chroma
+      operation: create_or_get_collection_named_query
+
+  - name: collect_findings
+    type: builtin
+    init: rest_client_invoke
+    visibility: internal
+    category: boundary
+    description: Read this round's derived entries back as ids and metadata.
+    problem: |
+      This is where the rebuild either holds or does not. The root has to
+      know what its workers found without holding what they read. It asks
+      only for entries tagged source derived and this round, and it takes
+      only their ids and metadata off the response.
+    goals:
+      - Select derived entries for the current round.
+      - Map the record ids and their metadata into the Result.
+    requirements:
+      input:
+        - Collection id, query embedding, and filters from the previous Result.
+      output:
+        - Output reports record ids and metadata for the matching derived entries.
+      errors:
+        - Network, timeout, schema, and mapping failures emit CommandError.
+    non_goals:
+      - Does not map the documents field. See the note on the output schema.
+      - Does not widen the filter beyond source derived and the current round.
+    parameters:
+      type: object
+      properties:
+        collection: {type: string}
+        query_embeddings: {type: array}
+        where: {type: object}
+        where_document: {type: object}
+        n_results: {type: integer}
+    emits: [QueryResponded, CommandError]
+    output:
+      # I1, stated where it is enforced. query_records_filtered's own
+      # response mapping in corpus-rest.yaml carries ids, documents, and
+      # metadatas; this schema takes two of the three. Nothing downstream
+      # can address what is not named here, so no document text reaches
+      # the reducing model.
+      #
+      # This is the line to be careful with. Adding documents to this
+      # schema would leave every test passing and turn the machine into
+      # ordinary retrieval augmentation, which is the result the chapter
+      # exists to distinguish itself from. A handles-only operation
+      # upstream would make it structural rather than declared; that is
+      # tracked in #32.
+      description: Record ids and metadata for this round's derived entries. No document content.
+      schema:
+        type: object
+        properties:
+          ids: {type: array}
+          metadatas: {type: array}
+        additionalProperties: false
+    side_effects:
+      - kind: external_api
+        target: chroma.query
+        state: read_only
+    reversibility: {classification: reversible}
+    undo: {strategy: noop, description: A query does not mutate the collection.}
+    errors:
+      - signal: CommandError
+        condition: The Chroma query call fails on network, timeout, schema, or mapping.
+        state_after_failure: No result set is produced and the collection is unchanged.
+    relationships:
+      overlaps:
+        - tool: search_blackboard
+          difference: The worker's query takes documents because a worker is allowed to read them; this one takes ids and metadata only.
+      after: [resolve_collect_collection]
+      before: [check_round_bound]
+    config:
+      rest_ref: chroma
+      operation: query_records_filtered
+
+  - name: check_round_bound
+    type: builtin
+    init: value_predicate
+    visibility: internal
+    category: word
+    description: Compare the round counter with the bound the request declared.
+    problem: Loop termination must be a machine-visible comparison, not a judgement the model makes about whether it has enough.
+    goals:
+      - Compare the current round numerically with the declared bound.
+      - Emit distinct signals for another round and for the last one.
+    requirements:
+      input:
+        - Resolves the latest round counter from command state.
+      output:
+        - Emits RoundsRemaining below the bound and RoundBoundReached otherwise.
+      errors:
+        - Emits CommandError when the count cannot resolve or coerce to a number.
+    non_goals:
+      - Does not increment the round.
+      - Does not decide the next state.
+    parameters: {type: object, properties: {}, additionalProperties: false}
+    emits: [RoundsRemaining, RoundBoundReached, CommandError]
+    output:
+      description: The resolved comparison and whether the bound predicate held.
+      schema:
+        type: object
+        properties:
+          left: {}
+          right: {}
+          op: {type: string}
+          operand_type: {type: string}
+          held: {type: boolean}
+        required: [left, right, op, operand_type, held]
+    side_effects: []
+    reversibility: {classification: reversible}
+    undo: {strategy: noop, description: Comparison changes nothing.}
+    errors:
+      - signal: CommandError
+        condition: The round counter cannot resolve or coerce to a number.
+        state_after_failure: No comparison is made and the loop does not advance.
+    relationships:
+      after: [collect_findings]
+      before: [increment_round, reduce_findings]
+    config:
+      left: $from(round_count).output
+      right: $.round_bound
+      op: lt
+      operand_type: number
+      satisfied: RoundsRemaining
+      unsatisfied: RoundBoundReached
+
+  - name: increment_round
+    type: exec
+    binary: jq
+    args: ["-c", ". + 1"]
+    stdin_source: $from(round_count).output
+    stdin_max_bytes: 32
+    visibility: internal
+    category: word
+    description: Advance the visible round counter by one.
+    problem: A new round must advance a machine-visible count rather than a number held inside a tool.
+    goals:
+      - Read the newest round counter and add exactly one.
+      - Republish it so the next collect filter and the predicate address the new value.
+    requirements:
+      input:
+        - The latest round_count output from command state.
+      output:
+        - Structured output the next iteration and the predicate can address.
+      errors:
+        - An absent, malformed, or oversized input emits CommandError.
+    non_goals:
+      - Does not compare the count with the bound.
+    emits: [RoundAdvanced, CommandError]
+    output:
+      description: The incremented round counter.
+      schema:
+        type: object
+        properties:
+          output: {type: string}
+          exit_code: {type: integer}
+        required: [output, exit_code]
+    side_effects:
+      - kind: none
+        description: Runs a deterministic transform and changes no domain state.
+    reversibility: {classification: reversible}
+    undo: {strategy: noop, description: Rollback removes the command-history entry.}
+    errors:
+      - signal: CommandError
+        condition: The round_count input is absent, malformed, empty, or exceeds the declared stdin bound.
+        message_shape: "increment_round: resolve exec input: <error>"
+    relationships:
+      after: [check_round_bound]
+      before: [plan_intents]

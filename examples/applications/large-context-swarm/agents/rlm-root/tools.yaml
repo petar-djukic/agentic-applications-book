@@ -1,0 +1,21 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+#
+# The last three are the catalog memory-write block's, selected here for
+# the Final write rather than redeclared.
+tools:
+  - seed_round
+  - plan_intents
+  - capture_plan
+  - parse_plan
+  - dispatch_worker
+  - compose_collect_query
+  - embed_collect
+  - resolve_collect_collection
+  - collect_findings
+  - check_round_bound
+  - increment_round
+  - reduce_findings
+  - embed_memory
+  - resolve_memory_collection
+  - write_memory
