@@ -203,7 +203,7 @@ tools:
       input:
         - The round from command state and the collection, anchor, and count from the request.
       output:
-        - One object shaped for the embed and query words: content, collection, where, where_document, n_results.
+        - "One object shaped for the embed and query words: content, collection, where, where_document, n_results."
       errors:
         - Compose or serialization failures emit CommandError.
     non_goals:

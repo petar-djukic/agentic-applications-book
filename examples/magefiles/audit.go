@@ -188,8 +188,15 @@ func auditListingBoundary(examplesRoot string) []string {
 }
 
 // auditApplicationModules enforces the single-release closure on any Go
-// module an application carries: a go.mod requiring the runtime module
-// must pin the manifest's release.
+// module an application carries: a go.mod requiring the runtime must pin
+// the manifest's go_version.
+//
+// The match is against runtime.go_module and every module nested under
+// it, because the runtime is itself a nested module: the repository root
+// publishes no go.mod, and a require line names
+// .../declarative-agents/agent-core rather than the repository path. An
+// earlier version compared against runtime.module followed by a space,
+// which no real require line can contain, so the check never fired (#35).
 func auditApplicationModules(examplesRoot string, manifest Manifest) []string {
 	var findings []string
 	pattern := filepath.Join(examplesRoot, "applications", "*", "go.mod")
@@ -202,17 +209,33 @@ func auditApplicationModules(examplesRoot string, manifest Manifest) []string {
 		}
 		for _, line := range strings.Split(string(content), "\n") {
 			trimmed := strings.TrimSpace(line)
-			if !strings.Contains(trimmed, manifest.Runtime.Module+" ") {
+			if !requiresRuntime(trimmed, manifest.Runtime.GoModule) {
 				continue
 			}
-			if !strings.HasSuffix(trimmed, " "+manifest.Runtime.Release) {
+			if !strings.HasSuffix(trimmed, " "+manifest.Runtime.GoVersion) {
 				findings = append(findings, fmt.Sprintf(
 					"%s: runtime requirement %q does not pin %s",
-					path, trimmed, manifest.Runtime.Release))
+					path, trimmed, manifest.Runtime.GoVersion))
 			}
 		}
 	}
 	return findings
+}
+
+// requiresRuntime reports whether a go.mod line requires the runtime
+// module or a module nested under it. A bare prefix test would also
+// match a lookalike path, so the character after the prefix has to be a
+// path separator or the space before the version.
+func requiresRuntime(line, goModule string) bool {
+	if goModule == "" {
+		return false
+	}
+	index := strings.Index(line, goModule)
+	if index < 0 {
+		return false
+	}
+	rest := line[index+len(goModule):]
+	return strings.HasPrefix(rest, " ") || strings.HasPrefix(rest, "/")
 }
 
 // auditChapterIDs resolves each entry's chapter id into the book's

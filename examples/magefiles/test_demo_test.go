@@ -62,10 +62,28 @@ func TestDemoFailsOnFailingStep(t *testing.T) {
 	}
 }
 
+// A partial example has a demo that exercises less than its SRD asks
+// for. It still runs: skipping it would hide the evidence it does
+// produce.
+func TestDemoRunsPartialEntries(t *testing.T) {
+	examplesRoot, _ := writeFixture(t)
+	mustWrite(t, filepath.Join(examplesRoot, "MANIFEST.yaml"),
+		strings.Replace(fixtureManifest, "status: planned", "status: partial", 1))
+	mustWrite(t, filepath.Join(examplesRoot, "applications", "sagas", "demo.yaml"),
+		"steps:\n  - name: canned\n    argv: [\"true\"]\n")
+	ran, skipped, err := demoExamples(examplesRoot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ran != 1 || skipped != 0 {
+		t.Fatalf("ran = %d, skipped = %d; want 1 and 0", ran, skipped)
+	}
+}
+
 // The fixture's sagas entry is planned and carries no demo.yaml, which
 // is the state every example passes through before it runs. Demo must
 // report it rather than fail on the absent file.
-func TestDemoSkipsUnimplementedEntries(t *testing.T) {
+func TestDemoSkipsPlannedEntries(t *testing.T) {
 	examplesRoot, _ := writeFixture(t)
 	ran, skipped, err := demoExamples(examplesRoot)
 	if err != nil {

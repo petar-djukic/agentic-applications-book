@@ -1,0 +1,31 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+#
+# The canned demo. Every step runs offline against the module cache and
+# needs no credentials, per the ARCHITECTURE canned-demos constraint.
+#
+# What runs today is the runtime's own preflight against both profiles:
+# --validate-config loads the profile, the machine, and the REST
+# definitions and exits non-zero on any error. That is a real check and
+# it is not a small one -- it caught two defects in these profiles that
+# structural cross-checking had missed -- but it is a check that the
+# machines load, not that they run. The blackboard loop itself, driven
+# against loopback stubs replaying testdata/responses/, is #36. The
+# manifest keeps this example at `partial` until those assertions exist.
+steps:
+  - name: validate rlm-worker
+    argv:
+      - go
+      - run
+      - github.com/Nokia-Bell-Labs/declarative-agents/agent-core/cmd/agent
+      - --validate-config
+      - --profile
+      - agents/rlm-worker/profile.yaml
+  - name: validate rlm-root
+    argv:
+      - go
+      - run
+      - github.com/Nokia-Bell-Labs/declarative-agents/agent-core/cmd/agent
+      - --validate-config
+      - --profile
+      - agents/rlm-root/profile.yaml

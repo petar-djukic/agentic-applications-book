@@ -13,4 +13,4 @@ title: Examples road-map
 examples:
   - chapter: C-rlm
     example: large-context-swarm
-    status: planned
+    status: partial

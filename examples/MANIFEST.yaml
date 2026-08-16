@@ -19,9 +19,26 @@
 #       release: v0.20260814.4
 #       simplified: "what was dropped relative to upstream"
 schema_version: 1
+# Two coordinates, because they are two different things and the first
+# demo to need a buildable dependency found them conflated.
+#
+# module/release name the declarative-agents *repository* release that
+# catalog copies are taken at. Every catalog-family provenance block
+# pins this exact string; that is the one-release closure of VISION G4
+# on copied material.
+#
+# go_module/go_version name the *Go module* examples build against.
+# There is no module at the repository root -- the runtime is the nested
+# agent-core module, and nested modules carry prefixed tags. Nokia
+# publishes agent-core/* tags up to v0.20260803.0, so that is the newest
+# version any go.mod here can resolve. It is older than the repository
+# release above, and the gap is real rather than an oversight: no
+# agent-core tag exists at the newer commit.
 runtime:
   module: github.com/Nokia-Bell-Labs/declarative-agents
   release: v0.20260814.4
+  go_module: github.com/Nokia-Bell-Labs/declarative-agents/agent-core
+  go_version: v0.20260803.0
 examples:
   # chapter: provisional. The book README carries no RLM chapter and
   # docs/ARCHITECTURE.yaml does not exist yet (#7), so the audit reports
@@ -31,7 +48,7 @@ examples:
   - id: large-context-swarm
     chapter: C-rlm
     kind: chapter-application
-    status: planned
+    status: partial
     srd: docs/srd/srd-large-context-swarm.yaml
   # The blackboard blocks the swarm composes. release: is the pinned
   # declarative-agents release, which is the newest upstream tag the

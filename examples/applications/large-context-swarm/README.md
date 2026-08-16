@@ -11,7 +11,9 @@ provenance-tagged finding back, and the root reduces those findings into
 a `Final` entry. Only handles and constant-size metadata cross the
 root's boundary.
 
-**Status: planned.** Nothing here runs yet. The contract this module
+**Status: partial.** `mage -d examples demo` loads both profiles under
+the pinned runtime and exits non-zero if either fails to validate. The
+blackboard loop itself does not run yet ([#36](https://github.com/petar-djukic/agentic-applications-book/issues/36)). The contract this module
 must satisfy is
 [`docs/srd/srd-large-context-swarm.yaml`](../../docs/srd/srd-large-context-swarm.yaml);
 the work is tracked under
@@ -47,7 +49,7 @@ string match cannot settle a claim, says so.
 
 | Arriving in | Content |
 |---|---|
-| [#34](https://github.com/petar-djukic/agentic-applications-book/issues/34) | `demo.yaml`, the pinned Go module, the loopback stubs, and the six assertions |
+| [#36](https://github.com/petar-djukic/agentic-applications-book/issues/36) | Loopback stubs replaying the fixtures, the loop run, and the six assertions |
 
 Deployment surface — Helm, kind, lifecycle-manager actors, Job workers —
 stays upstream in declarative-agents, per non-goal N3 in

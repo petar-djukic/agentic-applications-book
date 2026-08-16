@@ -143,6 +143,20 @@ testdata:
       ARCHITECTURE canned-demos constraint make this an obligation of
       the module, not a convenience of the test.
 
+evidence:
+  status: partial
+  satisfied: |
+    Both profiles load under the pinned runtime. `mage -d examples demo`
+    runs `agent --validate-config` against each, which parses the
+    profile, the machine, and the REST definitions and exits non-zero on
+    any error. It caught two defects that structural cross-checking had
+    missed: an unquoted description containing a colon, which YAML read
+    as a map where a string was required, and two `continue_on` signals
+    the fan-out named without declaring.
+  outstanding: |
+    D1 through D4 below. Nothing yet runs the loop, so no assertion in
+    D3 has been made against a real run -- including A5, the handle
+    discipline check the rebuild's claim rests on. Tracked in #36.
 demo:
   - id: D1
     name: full-loop

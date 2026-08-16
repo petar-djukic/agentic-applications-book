@@ -107,6 +107,14 @@ signals:
     trigger: The captured reply validated against the intents schema.
   - name: ParseFailed
     trigger: The captured reply was malformed or did not match the schema.
+  # ToolDone and ToolFailed are per-item outcomes of the fan-out, not
+  # transitions of this machine. They appear here because continue_on
+  # names them and the machine validator requires every signal it
+  # mentions to be declared.
+  - name: ToolDone
+    trigger: One dispatched worker finished successfully.
+  - name: ToolFailed
+    trigger: One dispatched worker exited unsuccessfully; the remaining intents still run.
   - name: WorkersCollected
     trigger: Every dispatched worker reached a terminal state and the join closed.
   - name: CollectQueryComposed

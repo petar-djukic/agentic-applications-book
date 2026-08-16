@@ -14,6 +14,8 @@ const fixtureManifest = `schema_version: 1
 runtime:
   module: github.com/Nokia-Bell-Labs/declarative-agents
   release: v0.20260814.4
+  go_module: github.com/Nokia-Bell-Labs/declarative-agents/agent-core
+  go_version: v0.20260803.0
 examples:
   - id: sagas
     chapter: C17
@@ -135,11 +137,36 @@ func TestAuditRejectsIncompleteProvenance(t *testing.T) {
 	requireFinding(t, auditFindings(t, examplesRoot, bookRoot), "provenance.simplified is empty")
 }
 
+// The require line is the shape a real go.mod carries: the nested
+// agent-core module, not the repository path. Against the pre-#35
+// matcher this test fails, because that matcher looked for the
+// repository path followed by a space and a real line has "/agent-core"
+// there instead.
 func TestAuditRejectsUnpinnedApplicationModule(t *testing.T) {
 	examplesRoot, bookRoot := writeFixture(t)
 	mustWrite(t, filepath.Join(examplesRoot, "applications", "sagas", "go.mod"),
-		"module example.test/sagas\n\nrequire github.com/Nokia-Bell-Labs/declarative-agents v0.20260101.0\n")
-	requireFinding(t, auditFindings(t, examplesRoot, bookRoot), "does not pin v0.20260814.4")
+		"module example.test/sagas\n\nrequire github.com/Nokia-Bell-Labs/declarative-agents/agent-core v0.20260101.0\n")
+	requireFinding(t, auditFindings(t, examplesRoot, bookRoot), "does not pin v0.20260803.0")
+}
+
+func TestAuditAcceptsPinnedApplicationModule(t *testing.T) {
+	examplesRoot, bookRoot := writeFixture(t)
+	mustWrite(t, filepath.Join(examplesRoot, "applications", "sagas", "go.mod"),
+		"module example.test/sagas\n\nrequire github.com/Nokia-Bell-Labs/declarative-agents/agent-core v0.20260803.0\n")
+	if findings := auditFindings(t, examplesRoot, bookRoot); len(findings) != 0 {
+		t.Fatalf("a correctly pinned module must not be a finding: %v", findings)
+	}
+}
+
+// A path that merely starts with the runtime module string is a
+// different module and must not be mistaken for it.
+func TestAuditIgnoresLookalikeModulePath(t *testing.T) {
+	examplesRoot, bookRoot := writeFixture(t)
+	mustWrite(t, filepath.Join(examplesRoot, "applications", "sagas", "go.mod"),
+		"module example.test/sagas\n\nrequire github.com/Nokia-Bell-Labs/declarative-agents/agent-core-extras v0.0.1\n")
+	if findings := auditFindings(t, examplesRoot, bookRoot); len(findings) != 0 {
+		t.Fatalf("a lookalike module path must not be audited as the runtime: %v", findings)
+	}
 }
 
 func TestAuditRejectsDanglingRealizes(t *testing.T) {

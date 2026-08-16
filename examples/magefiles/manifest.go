@@ -20,9 +20,18 @@ type Manifest struct {
 	Examples      []Entry `yaml:"examples"`
 }
 
+// Runtime carries two coordinates. Module and Release name the
+// declarative-agents repository release catalog copies are taken at, and
+// every catalog-family provenance block pins Release exactly. GoModule
+// and GoVersion name the Go module examples build against: the runtime
+// is the nested agent-core module, which carries its own prefixed tags,
+// so the buildable version is not the repository release and cannot be
+// derived from it.
 type Runtime struct {
-	Module  string `yaml:"module"`
-	Release string `yaml:"release"`
+	Module    string `yaml:"module"`
+	Release   string `yaml:"release"`
+	GoModule  string `yaml:"go_module"`
+	GoVersion string `yaml:"go_version"`
 }
 
 type Entry struct {

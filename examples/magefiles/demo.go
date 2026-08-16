@@ -26,10 +26,13 @@ type demoStep struct {
 	Argv []string `yaml:"argv"`
 }
 
-// Demo runs every implemented chapter-application's canned demo in
-// manifest order. A planned or partial entry is skipped and reported: it
-// has no demo.yaml yet by definition, and failing on its absence would
-// make the manifest's own planned status unusable.
+// Demo runs the canned demo of every chapter-application that has one,
+// in manifest order. Only a planned entry is skipped: planned means no
+// directory content exists yet, so there is no demo.yaml to read and
+// failing on its absence would make the manifest's own planned status
+// unusable. A partial entry does have a demo -- one that exercises less
+// than the SRD asks for -- and skipping it would hide the evidence it
+// does produce.
 func Demo() error {
 	ran, skipped, err := demoExamples(".")
 	if err != nil {
@@ -48,7 +51,7 @@ func demoExamples(examplesRoot string) (ran, skipped int, err error) {
 		if entry.Kind != kindChapterApplication {
 			continue
 		}
-		if entry.Status != statusImplemented {
+		if entry.Status == statusPlanned {
 			fmt.Printf("demo: skip %s (status %s)\n", entry.ID, entry.Status)
 			skipped++
 			continue
