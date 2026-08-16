@@ -1,0 +1,39 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+meta:
+  id: srd-c8
+  chapter: C8
+  title: "How to Build an Agent with Rollbacks"
+  file: 08-rollbacks.md
+  paper_fields: not-applicable
+section_goal: assemble the undo contracts and transition history into application-level rollback — what happens when a run must be unwound
+goals:
+  - id: G1.6
+    goal: The reader can state what a rollback replays, in what order, and where it stops.
+  - id: G3.5
+    goal: The reader can decide, for an application, which failures roll back and which terminate with residue.
+objective: >
+  Build from C4's per-tool reversals to the run-level walk: the receipt
+  chain, reverse order, compensation at boundaries, and the application's
+  policy for what convergence failure means.
+prior_material:
+  - path: examples/catalog/agents/knowledge-manager/memory-write/declarations.yaml
+    offers: the compensation receipt a rollback consumes
+citations:
+  - id: sagas-1987
+    role: anchor
+    note: forward pointer to C17; the safety argument gets its paper there
+    gap: "confirm id in references.yaml or add"
+constitutions: [V-G4, A-4]
+content:
+  - say: a run is a ledger; rollback is reading it backwards
+  - say: replay order and the boundary compensations
+  - say: the policy layer — what the application unwinds versus reports
+  - say: the limits — irreversible effects and honest residue
+links:
+  requires: [C4]
+  supports: [C17]
+gaps:
+  - the chapter is a stub; the article draft supplies the arc
+acceptance:
+  - the receipt walk matches the runtime's actual undo path at the pinned release

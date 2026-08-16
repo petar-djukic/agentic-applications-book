@@ -1,0 +1,35 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+meta:
+  id: srd-c4
+  chapter: C4
+  title: "Every Agent Needs an Undo"
+  file: 04-every-agent-needs-an-undo.md
+  paper_fields: not-applicable
+section_goal: make undo a first-class part of the tool contract — declared reversals, not cleanup scripts
+goals:
+  - id: G1.2
+    goal: The reader can classify a tool's side effect as reversible, compensatable, or irreversible, and say what each classification obliges.
+  - id: G3.2
+    goal: The reader can write the undo block of a tool declaration and predict what a rollback replays.
+objective: >
+  Walk the reversibility classifications through real declarations --
+  noop for reads, snapshot restore for files, compensating actions for
+  boundary writes -- and show the receipt chain a rollback consumes.
+prior_material:
+  - path: examples/catalog/agents/knowledge-manager/memory-write/declarations.yaml
+    offers: all three classifications in one small file, including a boundary compensation with captures
+citations: []
+constitutions: [V-G4, A-4]
+content:
+  - say: acting means owing a reversal; the contract states the debt
+  - say: the three classifications and the undo strategies attached to them
+  - say: receipts — what a boundary word records so its undo can run later
+  - say: what stays honest — irreversible is a classification, not a failure
+links:
+  requires: [C3]
+  supports: [C8]
+gaps:
+  - the chapter is a stub; the article draft supplies the arc
+acceptance:
+  - every undo strategy named appears in a shipped declaration the chapter can extract
