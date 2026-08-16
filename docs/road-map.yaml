@@ -1,0 +1,126 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+#
+# road-map.yaml -- drafting order and per-chapter status (GH-8, under
+# EPIC GH-6). Units are chapters keyed by the stable ids
+# docs/ARCHITECTURE.yaml assigns, not numbered releases: this book
+# drafts chapter by chapter as Implement-a-Paper pieces stabilize, and a
+# release scheme would be ceremony without a consumer. The examples
+# directory keeps its own road-map (examples/docs/road-map.yaml) for the
+# runnable artifacts; this file governs prose.
+#
+# Status vocabulary: drafted (full prose exists) | stub (file exists,
+# placeholder prose) | none (no chapter file). The examples' own
+# statuses (planned/partial/implemented) are a different axis and stay
+# in their manifest.
+
+meta:
+  artifact: "Book: Agentic Applications"
+  ordering: "series arc (substack/series/implement-a-paper.md), consolidated as pieces stabilize"
+  gates: |
+    Two gates govern drafting, both from the chapter form
+    (docs/ARCHITECTURE.yaml chapter_form):
+
+    The run-gate is a publish gate on every paper chapter: its demo runs
+    from a fresh clone at a named release before the chapter ships, with
+    the examples audit as the receipt. Drafting never waits on it.
+
+    The Create-tier gate is a DRAFTING gate on Part III and the closer:
+    a Create chapter is not drafted until its mechanism has landed in
+    declarative-agents -- merged, audited, released -- because the
+    chapter documents shipped code, never plans. Each Create chapter
+    below names the mechanism that blocks it.
+
+chapters:
+  # --- Part I: the substrate. No papers, no Create gate; these draft in
+  # any order once the constitutions (GH-9) exist.
+  - id: C3
+    status: drafted
+  - id: C4
+    status: stub
+  - id: C5
+    status: stub
+  - id: C6
+    status: stub
+  - id: C7
+    status: stub
+  - id: C8
+    status: stub
+
+  # --- The map.
+  - id: C9
+    status: stub
+    note: "Series piece 1, the opener; needs no new code and can draft any time."
+
+  # --- Part II: used and modified. Mechanisms already shipped upstream;
+  # no Create gate. Drafting order follows the series arc (pieces 2-8);
+  # the series plan leaves open whether C17 runs early as the cold hook.
+  - id: C11
+    status: stub
+  - id: C12
+    status: stub
+  - id: C13
+    status: stub
+  - id: C14
+    status: stub
+  - id: C15
+    status: stub
+  - id: C16
+    status: stub
+  - id: C17
+    status: stub
+
+  # --- Part III: created. Each chapter is blocked by its mechanism
+  # landing in declarative-agents; the blocking work is named per
+  # chapter, from the series plan's sequencing constraints.
+  - id: C19
+    status: stub
+    create_gate:
+      mechanism: "fan-out plus a vote over existing for_each and join machinery"
+      state: "for_each and join exist upstream; the vote composition is the landing work"
+  - id: C20
+    status: stub
+    create_gate:
+      mechanism: "memory across retries: one label and one prompt word"
+      state: "not landed"
+  - id: C21
+    status: stub
+    create_gate:
+      mechanism: "the repo's first Coordinator: consensus as a declared state"
+      state: "not landed; one of the two largest Create pieces"
+  - id: C22
+    status: stub
+    create_gate:
+      mechanism: "skill libraries as a RAG corpus; zero new agents"
+      state: "not landed"
+  - id: C23
+    status: stub
+    create_gate:
+      mechanism: "routing to aggregation by changing one machine"
+      state: "not landed"
+  - id: C-rlm
+    status: none
+    note: |
+      No chapter file yet; the mechanism landed first, inverting the
+      usual Create order. The book-side gate is satisfied: the
+      blackboard swarm runs as examples/applications/large-context-swarm
+      (GH-20, merged), canned demo green with the handle-discipline
+      assertion. The series piece additionally wants the fork's
+      provisioned swarm (its rel03.0 kind rig) so the fan-out is visible
+      in a fleet view; that gates the article's publish, not this
+      chapter's drafting.
+    create_gate:
+      mechanism: "the large-context-swarm application: rlm-root, rlm-worker, blackboard collection"
+      state: "landed in this repo's examples at the pinned release; fork rel03.0 outstanding for the series piece"
+
+  # --- The closer. Create-tier by argument rather than by landing: its
+  # subject is what the substrate refuses to express.
+  - id: C24
+    status: stub
+    create_gate:
+      mechanism: "the refusal itself: the chapter documents what was tried against the substrate and where it stops"
+      state: "not landed; one of the two largest Create pieces"
+
+follow_ons:
+  - "C-rlm needs its chapter file created and the README Part III row linked when drafting starts; the id and roster entry exist (docs/ARCHITECTURE.yaml D2)."
+  - "The instrumentation holdings (docs/adopted/instrumentation/) enter this road-map only after the placement decision (docs/ARCHITECTURE.yaml D3) is made."

@@ -1,0 +1,185 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+#
+# definitions.yaml -- canonical terminology (GH-8, under EPIC GH-6).
+# Each term is a top-level key with a definition and optional see_also,
+# on the ieee-comst model. Prose, SRDs, and issues cite these meanings
+# rather than redefining them; a term is defined once or it is not
+# canonical. Substrate terms follow declarative-agents usage, since the
+# book's machines are that runtime's files.
+
+agent:
+  definition: >
+    A profile the runtime can run: a machine, a tool selection, and the
+    declarations that bind them, packaged as files. The book never uses
+    "agent" for a model; the model is one word an agent's machine may
+    dispatch.
+  see_also: [profile, machine, tool]
+
+machine:
+  definition: >
+    The declared state machine an agent runs: named states, the signals
+    that move between them, the action dispatched on each transition,
+    and a budget. The machine owns sequencing; no tool and no model
+    chooses the next state. In declarative-agents this is the
+    MachineSpec YAML.
+  see_also: [state, transition, signal, budget, terminal_state]
+
+state:
+  definition: >
+    A named position in a machine, carrying a meaning line. Terminal
+    states carry a run status; every state a boundary word can fail in
+    carries an error edge.
+  see_also: [machine, terminal_state, transition]
+
+transition:
+  definition: >
+    One row of a machine: in this state, on this signal, go to that
+    state, dispatching this action. Transitions are the whole of an
+    agent's control flow -- what a paper leaves implicit, a transition
+    table forces into writing.
+  see_also: [state, signal, machine]
+
+signal:
+  definition: >
+    The name a tool's result carries, and the only thing a transition
+    matches on. The set of signals a machine consumes is its alphabet;
+    rebuilds regularly discover paper mechanisms whose alphabet was
+    never stated.
+  see_also: [transition, tool]
+
+tool:
+  definition: >
+    A declared capability an action dispatches: typed inputs, declared
+    side effects, emitted signals, and a reversibility classification
+    with its undo strategy. The book also says "word" for a tool in a
+    machine's vocabulary, following the runtime's usage.
+  see_also: [word, signal, undo, declaration]
+
+word:
+  definition: >
+    A tool viewed as vocabulary: one dispatchable unit of a machine's
+    language. Used interchangeably with tool when the emphasis is on
+    composition rather than capability.
+  see_also: [tool]
+
+declaration:
+  definition: >
+    The YAML that binds a tool into a profile: its config, parameters,
+    output schema, side effects, and relationships. Listings extract
+    from declarations, which is what makes the book's claims checkable.
+  see_also: [tool, profile, listing]
+
+profile:
+  definition: >
+    The file set naming an agent: profile.yaml pointing at a machine,
+    tool selections, declarations, and REST definitions. The unit the
+    runtime loads and validates.
+  see_also: [agent, machine, declaration]
+
+budget:
+  definition: >
+    A machine's declared ceilings: command timeout and maximum
+    iterations. The budget is what makes a loop's termination a property
+    of the file rather than a hope about the model.
+  see_also: [machine, terminal_state]
+
+terminal_state:
+  definition: >
+    A state the run ends in, carrying succeeded or failed. Who owns the
+    exit -- which component may decide the run is over -- is among the
+    decisions papers most often leave unspecified.
+  see_also: [state, budget]
+
+undo:
+  definition: >
+    The declared reversal of a tool's side effect: noop for reversible
+    reads, snapshot restore for files, compensating action for boundary
+    writes. Part of the tool contract, not an afterthought; Part I
+    argues every agent needs one.
+  see_also: [tool]
+
+retest:
+  definition: >
+    The book's signature act: taking a paper's claim, restating it
+    falsifiably, and running it on this substrate years after
+    publication. Announced per chapter in the retest box; its outcome is
+    a verdict.
+  see_also: [conceptual_replication, verdict]
+
+conceptual_replication:
+  definition: >
+    Rebuilding a paper's mechanism on a different substrate to see
+    whether the claim survives and still makes sense -- as opposed to a
+    reproduction, which reruns the paper's own benchmarks. Every rebuild
+    in this book is the former; no chapter claims the latter unless it
+    did the work.
+  see_also: [retest, verdict]
+
+verdict:
+  definition: >
+    The retest's outcome, one of three. Holds: the mechanism works as
+    described on this substrate. Holds with residue: it works, and the
+    rebuild names what the paper left out. Aged out: the claim no longer
+    earns its complexity. Residue is the most useful outcome; verdicts
+    accumulate across the book.
+  see_also: [retest, conceptual_replication]
+
+use_modify_create:
+  definition: >
+    The pedagogy, in every chapter. Use: run the shipped machine.
+    Modify: change one declared thing with a predicted observable
+    outcome. Create: the closing pointer naming files and constructs for
+    the next thing the reader could build. Create-tier chapters land
+    their mechanism in the runtime before the chapter drafts.
+  see_also: [create_pointer, run_gate]
+
+create_pointer:
+  definition: >
+    The two-to-four-sentence close of every paper chapter: "to make it
+    do X, you add Y" with named files and constructs, no walkthrough. A
+    real path that sounds like an afternoon; each pointer seeds a later
+    chapter or a repo contribution.
+  see_also: [use_modify_create]
+
+run_gate:
+  definition: >
+    The publish gate on every paper chapter: the demo it describes runs
+    from a fresh clone at a named release tag before the chapter ships,
+    with the repository's audit evidence as the receipt. A drafting
+    never waits on it; a publish never skips it.
+  see_also: [canned_demo, listing]
+
+listing:
+  definition: >
+    A code excerpt in a chapter, extracted from a marked region of
+    example source and compared byte-for-byte by the audit. Drift
+    between what the book prints and what the code says is a finding,
+    not a review note. Listings extract from examples/applications/,
+    never from the catalog copies.
+  see_also: [canned_demo, catalog_family, declaration]
+
+canned_demo:
+  definition: >
+    A chapter example's demonstration run on deterministic fixtures --
+    canned model output and canned service responses -- so it completes
+    offline with no credentials. The examples contract makes this the
+    default evidence; live-model variants are opt-in extras.
+  see_also: [run_gate, listing]
+
+catalog_family:
+  definition: >
+    An agent family copied into examples/catalog/ from declarative-agents
+    at a pinned release, headers intact, simplified but never forked,
+    with provenance recorded in the manifest. Referenced by the book's
+    applications; never extracted into listings.
+  see_also: [listing]
+
+chapter_id:
+  definition: >
+    A chapter's stable identity, assigned in docs/ARCHITECTURE.yaml and
+    frozen: C<n> records the file number at assignment, and the id never
+    changes through renumbering. Everything that binds to a chapter --
+    the examples manifest, the road-map, the SRDs -- binds to the id,
+    not the file.
+  see_also: [listing]
