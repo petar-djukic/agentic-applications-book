@@ -4,7 +4,6 @@
 # The last three are the catalog memory-write block's, selected here for
 # the Final write rather than redeclared.
 tools:
-  - capture_request
   - seed_round
   - plan_intents
   - capture_plan
