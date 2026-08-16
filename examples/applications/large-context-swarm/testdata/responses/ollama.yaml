@@ -12,6 +12,21 @@
 # one finding per worker in sequential for_each order, then the
 # reduction.
 routes:
+  # invoke_llm probes the model catalogue when it registers its tools,
+  # before the machine runs a single transition. A stub that omits this
+  # route fails at registration with a 501 and never reaches the loop.
+  # The names must match the models the two llm.yaml files configure.
+  - method: GET
+    path: /api/tags
+    responses:
+      - status: 200
+        body:
+          models:
+            - name: qwen3:8b
+              model: qwen3:8b
+            - name: qwen3-embedding:8b
+              model: qwen3-embedding:8b
+
   - method: POST
     path: /api/embeddings
     responses:

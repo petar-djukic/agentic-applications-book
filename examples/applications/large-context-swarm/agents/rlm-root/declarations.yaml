@@ -118,7 +118,6 @@ tools:
       before: [dispatch_worker]
     config:
       source: $from(captured_plan).response
-      signal: PlanParsed
       schema:
         type: object
         additionalProperties: false
@@ -128,6 +127,8 @@ tools:
             type: array
             minItems: 2
             items: {type: string}
+      parsed: PlanParsed
+      unparsed: ParseFailed
 
   - name: dispatch_worker
     type: builtin

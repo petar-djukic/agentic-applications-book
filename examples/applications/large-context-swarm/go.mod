@@ -9,7 +9,10 @@ module github.com/petar-djukic/agentic-applications-book/examples/applications/l
 
 go 1.26.3
 
-require github.com/Nokia-Bell-Labs/declarative-agents/agent-core v0.20260803.0
+require (
+	github.com/Nokia-Bell-Labs/declarative-agents/agent-core v0.20260803.0
+	gopkg.in/yaml.v3 v3.0.1
+)
 
 require (
 	filippo.io/edwards25519 v1.2.0 // indirect
@@ -49,5 +52,4 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa // indirect
 	google.golang.org/grpc v1.81.1 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
