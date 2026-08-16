@@ -1,0 +1,161 @@
+# SRD 6.3 -- Reading the logs.
+# Drafting contract per docs/srd/README.md. Written before the chapter.
+#
+# The chapter with the most reproducible evidence in the book. Every figure
+# below was computed from the named dataset at GH-70 and is stated with its
+# denominator, because a rate without one is the failure this chapter warns
+# against.
+
+meta:
+  chapter: C6.3
+  title: Reading the logs
+  parent: P6
+section_goal: teach the reader to find the shapes that matter in their own telemetry, starting from a distribution rather than from an incident
+goals:
+  - id: G5.7
+    goal: The reader can tell a task that is working hard from one that is thrashing, using a threshold derived from their own distribution rather than a borrowed number.
+  - id: G5.8
+    goal: The reader can recognise the recurring waste shapes -- retry loops, edit-match failures, compile-fix cycles -- from their signatures in the record.
+  - id: G5.9
+    goal: The reader can say what retrying a failed task is worth in their pipeline, and stop retrying when the answer is little.
+chain:
+  - id: Q8
+    owns: partial
+    note: >
+      C6.2 produced records; C6.3 is where they become evidence. Its
+      contribution to Q8 is that the reading is a skill with a method --
+      distribution first, then tails, then signatures -- rather than an eye
+      for anomalies.
+constitutions:
+  - file: ../constitutions/voice.yaml
+    rules: [V-S1, V-S3, V-S5, V-S6, V-V4, V-V5]
+    note: >
+      V-V4: no thresholds are prescribed. The reader is shown a distribution
+      and derives their own, because a borrowed threshold is the error this
+      chapter is trying to prevent. V-V5: every rate arrives with its
+      denominator in the same sentence.
+  - file: ../constitutions/argument.yaml
+    rules: [A-C1, A-C2, A-C3, A-C6, A-X1]
+    note: >
+      A-C2 is the binding rule and this chapter is where it is easiest to
+      break, since the figures are striking. A-C6: turn-level figures cover
+      roughly a quarter of the corpus's tasks and every one of them says so.
+objective: >
+  It teaches the reading in the order that works. First the distribution,
+  because "40 turns" means nothing until the reader knows their own median is
+  22 and that a quarter of instrumented task-sessions cross 40 anyway --
+  thrashing is a tail, not a threshold, and every pipeline's tail sits
+  somewhere different. Then the shapes, which are recognisable by signature
+  rather than by cost: a task re-invoked many times over, an edit that keeps
+  failing to match, a compile-fix cycle that never converges. Then the finding
+  that changes behaviour most, which is what retrying is worth: in this corpus
+  the first attempt succeeds about 77% of the time and every subsequent
+  attempt, up to eighteen of them, adds about two points in total. A pipeline
+  that retries hard is buying almost nothing, and the chapter has the numbers
+  to say so with their denominator attached.
+prior_material:
+  - path: go-unix-utils
+    offers: >
+      analysis/datasets/task_turns.csv, from which the turn distribution was
+      computed at GH-70 across 21,821 turn records covering 737 task-sessions
+      over 661 distinct task ids: median 22 turns, p90 63, p95 79, p99 117,
+      maximum 158, with 187 sessions at or above 40 turns and 54 at or above
+      70. Also analysis/datasets/waste_summary.yaml, which records 132
+      zero-LOC tasks, 16 near-timeout tasks, a log-based wasted cost of
+      $211.38 against a git-based proxy of $261.94, a maximum of 18
+      invocations for a single task, and 15,384 seconds of reported rate
+      limiting.
+  - path: go-unix-utils
+    offers: >
+      analysis/datasets/tool_call_summary.yaml, which is the retry finding:
+      pass@1 of 0.7743 under the strict criterion rising only to 0.795 by
+      pass@18, over 678 task ids with recorded invocations. The status-based
+      criterion tells the same story from 0.9528 to 0.972.
+  - path: cobbler-scaffold
+    offers: >
+      GH-1453, which investigated the prompt changes behind the compile-retry
+      and edit-matching loops, so the waste shapes have a recorded diagnosis
+      rather than only a signature.
+citations:
+  - id: sigelman2010
+    role: evidence
+    note: why the joins work at all -- the identity propagated in C6.2 is what lets a turn record, a cost record and an outcome be read as one task
+  - id: cemri2025
+    role: evidence
+    note: >
+      The taxonomy's vocabulary for what the shapes are instances of, so a
+      reader who finds one in their logs can look up what is known about it
+      rather than naming it locally.
+  - id: wang2024
+    role: context
+    note: the failure that leaves no signature -- code that passed and was wrong -- which is the limit of what log reading can find and belongs in this chapter rather than as a surprise later
+  - id: jones1978
+    role: context
+    note: carried forward to C6.4, cited here only where a per-line rate is used as an intermediate, since the same denominator problem applies
+content:
+  - say: "Reading starts at the distribution, because a turn count means nothing without the shape it sits in."
+    cites: []
+  - say: "In this corpus the median instrumented task-session runs 22 turns and a quarter of them cross 40, so 40 is a tail rather than a threshold and each pipeline's tail is its own."
+    cites: []
+  - say: "The joins that make this readable exist only because every record carries the same identity, which is the field C6.2 insisted on."
+    cites: [sigelman2010]
+  - say: "The waste shapes are recognised by signature: a task re-invoked many times, an edit that repeatedly fails to match, a compile-fix cycle that does not converge."
+    cites: [cemri2025]
+  - say: "The most useful number in this chapter is what retrying is worth: first attempts succeed about 77% of the time and seventeen further attempts add roughly two points."
+    cites: []
+  - say: "That is an argument for diagnosing rather than retrying, and it is the kind of conclusion no amount of watching runs would have produced."
+    cites: []
+  - say: "What log reading cannot find is the task that passed every gate and was wrong, which is why this part supplements Part IV rather than replacing it."
+    cites: [wang2024]
+apparatus:
+  objectives:
+    - Derive a thrashing threshold from your own distribution.
+    - Recognise the waste shapes by their signatures.
+    - Decide what retrying is worth in your pipeline.
+  sidebars:
+    - type: Performance Observation
+      about: the turn distribution with its percentiles and its denominator, presented as the reader's starting instrument rather than as a result
+    - type: Common Error
+      about: adopting another pipeline's turn threshold, which flags normal work as thrashing or misses it entirely depending on which direction the distributions differ
+    - type: From the Field
+      about: the single task that was invoked eighteen times, and what reading its turns revealed that its cost alone did not
+  key_terms: []
+  key_terms_note: >
+    definitions.yaml assigns no term here. If the chapter coins one for
+    thrashing or for a waste signature, it reaches the glossary in the same
+    unit (contract rule 2).
+figures:
+  - shows: "The turn-count distribution for instrumented task-sessions with the median and the 40-turn line marked, and the three waste signatures called out on the tail."
+    status: planned
+links:
+  requires: [C6.1, C6.2]
+  supports: [C6.4, C6.5, C6.6, C6.7]
+gaps:
+  - >
+    Coverage has to be stated wherever a turn-level figure appears. The turn
+    distribution comes from 737 task-sessions across 661 task ids, against
+    2,706 tasks in economics_summary.yaml -- roughly a quarter, and not a
+    designed sample. Every percentile in this chapter is a percentile of the
+    instrumented subset, and if the chapter states them as properties of the
+    corpus it will be wrong in a way no reader can detect.
+  - >
+    The three waste patterns are named in the outline from GH-1453, whose
+    subject is the prompt changes investigated to reduce compile-retry and
+    edit-matching loops. That gives two of the three a recorded diagnosis; the
+    third -- redundant comparisons in the outline's phrasing -- is not
+    evidenced in the datasets this SRD searched. Either it is located during
+    drafting or the chapter treats two shapes and says the third was not
+    reproducible.
+  - >
+    The two wasted-cost figures disagree by design and the chapter must
+    explain rather than pick: $211.38 from log-based retry accounting against
+    $261.94 from a git-commit proxy. They measure different things and the
+    difference is itself instructive, but presenting either alone as "wasted
+    cost" would be exactly the unattributed number A-C2 forbids.
+acceptance:
+  - Every citation id resolves in references.yaml.
+  - Every rate appears with its denominator in the same sentence (V-V5), and every figure names its dataset file (A-C2).
+  - No threshold is prescribed (V-V4); the reader derives one from a distribution the chapter shows them how to compute.
+  - The turn-level coverage caveat appears wherever turn-level figures do, not once at the start.
+  - The retry finding is stated with both criteria, since the strict and status readings differ and quoting one alone overstates the case.
+  - The limit of log reading is stated in this chapter (A-C6), so Part IV is not made to look redundant.

@@ -1,0 +1,150 @@
+# SRD 6.1 -- The black box problem.
+# Drafting contract per docs/srd/README.md. Written before the chapter.
+#
+# Opens Part VI. Its honesty test is that the corpus behind this book is
+# still mostly dark, and the chapter has to say so rather than presenting
+# instrumentation as a solved problem the reader is late to.
+
+meta:
+  chapter: C6.1
+  title: The black box problem
+  parent: P6
+section_goal: establish what is invisible in an uninstrumented run, and what decisions that invisibility forces the reader to make on guesswork
+goals:
+  - id: G5.1
+    goal: The reader can name what an uninstrumented run does not tell them -- where the time went, where the money went, and which failures repeated.
+  - id: G5.2
+    goal: The reader can identify a decision they are currently making on guesswork, and say what observation would settle it.
+  - id: G5.3
+    goal: The reader can say why the model's own account of a run is not instrumentation, and what it is good for instead.
+chain:
+  - id: Q8
+    owns: partial
+    note: >
+      Q8 opens here. The chapter's job is to make the question urgent before
+      any answer is offered -- a reader who does not feel the blindness will
+      read C6.2 as a list of metrics rather than as a set of answers.
+constitutions:
+  - file: ../constitutions/voice.yaml
+    rules: [V-S1, V-S2, V-S6, V-V1, V-V5, V-P1]
+    note: >
+      V-V1 governs the whole part and this chapter enforces it: no metric is
+      named before the decision it unblocks. V-V5: the corpus's own coverage
+      is the deflation, and it belongs in this chapter rather than being
+      saved for a caveat later.
+  - file: ../constitutions/argument.yaml
+    rules: [A-C1, A-C2, A-C3, A-C6, A-X1]
+    note: >
+      A-C2: every figure names its dataset, and this part is where that rule
+      is most load-bearing, since the whole argument is about measurement.
+      A-C6: the corpus is one pipeline generating Unix utilities, and what
+      generalises from it is the method rather than the numbers.
+objective: >
+  It establishes the condition the rest of the part removes. An uninstrumented
+  run tells you one bit -- it worked or it did not -- and everything the
+  programmer needs to change the pipeline sits in what it does not tell you:
+  which tasks cost what, which failures were the same failure, how much of the
+  spend produced nothing. The chapter makes that concrete by showing decisions
+  that cannot be made without the data, then draws the distinction readers
+  most often get wrong: the model's own narration of what it did is not
+  instrumentation. It is generated text about a process, produced by the thing
+  being measured, and it is useful for reading intent rather than for counting
+  anything. The chapter closes on its own limits, because the corpus this book
+  measures is itself only partly instrumented, and a part about measurement
+  that overstates its coverage has failed at its first job.
+prior_material:
+  - path: go-unix-utils
+    offers: >
+      analysis/datasets/ as the after picture, and its own coverage as the
+      before: tool_call_summary.yaml records 659 task ids with transcripts
+      against the 2,706 tasks in economics_summary.yaml, so roughly a quarter
+      of the corpus can be read turn by turn and the rest is known only in
+      aggregate. That gap is this chapter's most useful evidence.
+  - path: cobbler-scaffold
+    offers: >
+      The orchestrator before and after logging existed, including the stats
+      defects that made early numbers wrong rather than absent -- which is the
+      worse condition and the reason C6.7 exists.
+  - path: meshintelligence.substack.com/how-to-glm-52-on-opencode
+    offers: a cost decision made on observation rather than preference, as the concrete form of what instrumentation buys
+citations:
+  - id: sigelman2010
+    role: anchor
+    note: >
+      Cited for the framing rather than the mechanism: a system whose work
+      crosses processes cannot be understood from any one of them, which is
+      the reason a generation run is opaque by default rather than by
+      oversight.
+  - id: wang2024
+    role: evidence
+    note: >
+      Why the run's own output cannot be trusted as its record. Output that is
+      fluent whether or not it is right applies to a model's account of its
+      own work as much as to the code it wrote.
+  - id: cemri2025
+    role: context
+    note: the failure categories a reader cannot distinguish without logs, carried forward from Part V so the chapter connects the blindness to failures already named
+content:
+  - say: "An uninstrumented run reports one bit, and every question worth asking afterwards needs more than one bit."
+    cites: []
+  - say: "The questions are ordinary ones -- what did this cost, which failures were the same failure, where did the time go -- and none of them can be answered from the artifact the run produced."
+    cites: [cemri2025]
+  - say: "Work that crosses processes cannot be reconstructed from any single one of them, which is why the opacity is structural rather than an oversight."
+    cites: [sigelman2010]
+  - say: "The model's account of what it did is not a record of what it did. It is generated text about a process, produced by the thing being measured."
+    cites: [wang2024]
+  - say: "That account is still useful, for reading what the agent thought it was doing, which is a different question from what it did."
+    cites: []
+  - say: "This book's own corpus is instrumented in aggregate and only partly turn by turn, so the part that follows is written from a quarter of the tasks in detail and all of them in summary."
+    cites: []
+apparatus:
+  objectives:
+    - Name what an uninstrumented run does not tell you.
+    - Identify a decision currently made on guesswork and the observation that would settle it.
+    - Distinguish the model's account of a run from a record of it.
+  sidebars:
+    - type: Common Error
+      about: reading the agent's summary of its own work as telemetry, when it is generated text that was never checked against what happened
+    - type: From the Field
+      about: the decision that could not be made until the logs existed, and what it was made on before that
+    - type: Performance Observation
+      about: what instrumentation costs in run time and storage, since a part that never prices its own subject would fail its own argument
+  key_terms: []
+  key_terms_note: >
+    definitions.yaml assigns no term here. `monitor` is recorded at part level
+    and this SRD does not claim it; srd-6.2 does, where the telemetry the role
+    collects is specified (contract rule 2).
+figures:
+  - shows: "One generation run drawn twice -- as the single success-or-failure bit it reports uninstrumented, and as the same run with per-task cost, turns, and outcome visible."
+    status: planned
+links:
+  requires: [C1.5, C5.9]
+  supports: [C6.2, C6.3, C6.4, C6.7]
+gaps:
+  - >
+    The before-and-after that outline.yaml describes as the part's turning
+    point -- "it was adding logging" -- has no artifact showing the before.
+    The datasets exist because instrumentation exists, so the uninstrumented
+    period is precisely the period with no data. The chapter should argue from
+    the structure of the blindness and from what the logs later revealed that
+    nobody had suspected, rather than claiming a measured before-and-after it
+    cannot produce.
+  - >
+    Coverage is the chapter's own honesty problem and its best evidence at the
+    same time. 659 task ids carry transcripts against 2,706 tasks recorded,
+    which is roughly a quarter. The exact denominator needs one decision the
+    drafter must make and state: economics_summary.yaml reports 2,706 tasks
+    while runs.csv sums to 2,718, and the two are not reconciled anywhere in
+    the datasets. Until they are, every task-count figure in Part VI should
+    name which file it came from rather than presenting one number.
+  - >
+    A-C6: this is one pipeline, generating Unix utilities in Go, measured over
+    60 runs. What the part can claim to generalise is the method and the
+    categories, not the magnitudes, and C6.1 is where that scope is set for
+    every chapter after it.
+acceptance:
+  - Every citation id resolves in references.yaml.
+  - No metric is named before the decision it would unblock (V-V1); the chapter is about blindness, not about a logging schema.
+  - The corpus's own partial coverage appears in this chapter (V-V5), not deferred to a later caveat.
+  - The distinction between the model's account and a record is stated, since every later chapter depends on it.
+  - Every figure names the dataset file it came from (A-C2), and where two files disagree the chapter says so.

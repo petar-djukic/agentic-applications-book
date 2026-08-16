@@ -1,0 +1,159 @@
+# SRD 6.2 -- What to log.
+# Drafting contract per docs/srd/README.md. Written before the chapter.
+#
+# This SRD claims `monitor` for C6.2. definitions.yaml recorded it at part
+# level; GH-70 assigns it here, where the telemetry the role collects is
+# specified.
+
+meta:
+  chapter: C6.2
+  title: What to log
+  parent: P6
+section_goal: derive a logging schema from the decisions it has to support, so the reader records what they will use rather than everything they can reach
+goals:
+  - id: G5.4
+    goal: The reader can name the fields a generation run must record, and say which decision each one serves.
+  - id: G5.5
+    goal: The reader can attach an identity to a unit of work that survives across processes, so turns, costs, and outcomes can be joined afterwards.
+  - id: G5.6
+    goal: The reader can decide what not to log, from cost and from the fact that unused fields are never validated.
+chain:
+  - id: Q8
+    owns: partial
+    note: >
+      C6.1 established the blindness; C6.2 is the first half of the answer.
+      Its contribution to Q8 is that the schema is derivable rather than
+      conventional -- each field earns its place by a question it settles, and
+      a field with no question is removed.
+constitutions:
+  - file: ../constitutions/voice.yaml
+    rules: [V-S1, V-S3, V-S4, V-S5, V-S6, V-V1]
+    note: >
+      V-S3: the categories of what to log are stated as a decomposition before
+      any field is treated. V-V1 again: each field arrives from its question.
+      V-S5: the schema is exhibited on real records, not described.
+  - file: ../constitutions/argument.yaml
+    rules: [A-C1, A-C2, A-C4, A-C5, A-X1]
+    note: >
+      A-C5: the emerging telemetry standard is dated and its status stated,
+      because it is unstable at the time of writing and a reader who waits for
+      it logs nothing for a year. A-C4: the context-size field rests on
+      C1.5's mechanism rather than on a hunch that bigger is worse.
+objective: >
+  It derives a logging schema instead of listing metrics. The chapter starts
+  from the decisions Part VI's later chapters make -- is this task thrashing,
+  is this run more expensive than the last, did this failure repeat, is the
+  context filling -- and works back to the smallest set of fields that answers
+  them. Three requirements organise it, taken from distributed tracing and
+  unchanged by the setting: an identity for the unit of work that every record
+  carries, enough structure to say what happened before what, and a decision
+  about sampling, because recording everything at full fidelity is a cost the
+  reader has to choose deliberately. It exhibits a working schema rather than
+  proposing one, since the corpus behind this book carries a per-turn record
+  whose fields can be read off directly. It closes on what not to log, which
+  is the half most treatments omit: an unused field is never validated, and an
+  unvalidated field is worse than a missing one because it will be believed.
+prior_material:
+  - path: go-unix-utils
+    offers: >
+      analysis/datasets/task_turns.csv as a working schema to exhibit rather
+      than invent: task_id, task_id_kind, run_id, session_uuid, turn_index,
+      timestamp, tokens_input, tokens_output, cache_creation, cache_read,
+      model_id, had_tool_use, and tool_count_in_turn. Every one of those
+      fields answers a question a later chapter asks, and the identity triple
+      is what makes the joins in C6.3 and C6.4 possible at all.
+  - path: cobbler-scaffold
+    offers: >
+      The logging as implemented in the orchestrator, including where the
+      records are written and what the run-level rollups keep. Also the
+      rate-limit and timeout events, which are conditions rather than
+      measurements and need their own treatment.
+  - path: meshintelligence.substack.com/how-to-loop-engineering
+    offers: the stateless-session premise that forces the identity requirement -- if each session starts cold, nothing but the record connects one to the next
+citations:
+  - id: sigelman2010
+    role: anchor
+    note: >
+      The three requirements the chapter is organised around: propagated
+      identity, causal structure, and sampling as a deliberate choice. A
+      generation run is a distributed trace whose spans are agent turns, so
+      the requirements transfer without adaptation.
+  - id: otel-genai
+    role: context
+    note: >
+      The emerging vocabulary for agent telemetry -- spans, metrics and events
+      for GenAI clients. Cited with its status stated: in active development
+      with its schema URL unset when checked, so it is a direction rather than
+      a target, and the reader should log to their own schema now.
+  - id: liu2023
+    role: evidence
+    note: why context size is worth a field rather than an assumption -- what is attended to depends on position, so a growing context degrades before it overflows
+  - id: latentpatterns-harness
+    role: evidence
+    note: the harness responsibilities that determine what is observable at all, since a field can only be logged by the component that sees the event
+content:
+  - say: "A schema is derived from the decisions it has to support, and any field that cannot name its decision is removed before it is written."
+    cites: []
+  - say: "Three things make records joinable across processes: an identity every record carries, enough structure to order events, and a sampling decision made on purpose."
+    cites: [sigelman2010]
+  - say: "In practice the identity is a triple -- which run, which task, which session -- and everything else in the record hangs off it."
+    cites: []
+  - say: "Per turn, the useful fields are small in number: tokens in and out, cache creation and reads, the model that answered, whether a tool was called and how many times."
+    cites: [latentpatterns-harness]
+  - say: "Context size earns a field because attention depends on position, so a run degrades gradually as the context grows rather than failing when it is full."
+    cites: [liu2023]
+  - say: "Rate limits and timeouts are conditions rather than measurements, and they need recording as events with durations or they vanish into wall-clock time."
+    cites: []
+  - say: "An interoperable vocabulary for this is arriving and is not settled, which is a reason to log now to a schema you control rather than to wait."
+    cites: [otel-genai]
+  - say: "The last decision is what not to log, because a field nothing reads is never checked, and an unchecked field will be believed the first time someone reads it."
+    cites: []
+apparatus:
+  objectives:
+    - Name the fields a run must record and the decision each serves.
+    - Attach an identity that survives across processes.
+    - Decide what not to log, and say why.
+  sidebars:
+    - type: Good Practice
+      about: writing the identity triple into every record at the point of emission, so joins never depend on reconstructing which run a file belonged to
+    - type: Common Error
+      about: logging everything available and validating none of it, which produces fields that look authoritative and were never once checked against reality
+    - type: Performance Observation
+      about: what per-turn logging costs in storage and run time against the sampling rate, which is the trade Dapper names and this pipeline also has to make
+  key_terms: [monitor]
+figures:
+  - shows: "One task's records from spawn to result, showing the identity triple carried through every row and which later chapter's question each field answers."
+    status: planned
+links:
+  requires: [C1.3, C1.5, C5.6, C6.1]
+  supports: [C6.3, C6.4, C6.5, C6.6, C6.7]
+gaps:
+  - >
+    `monitor` is assigned to this chapter by GH-70, having been recorded at
+    part level with no owning chapter. The assignment is sound -- this is
+    where the telemetry the role collects is specified -- but the glossary
+    definition describes the role collecting compiler output and test results
+    as well, which is verification output rather than telemetry. Either the
+    definition narrows to what this chapter specifies, or the chapter covers
+    the verification stream too and says how it differs from C4.2's gates.
+    The drafter should not leave both readings standing.
+  - >
+    Sampling is in the contract as a requirement and the corpus made the
+    opposite choice by accident: transcripts exist for 659 task ids out of
+    2,706 tasks, which is a sample nobody designed. The chapter should say
+    that plainly, because a reader will otherwise infer that partial coverage
+    was a considered trade-off when it was a consequence of when logging was
+    turned on.
+  - >
+    The schema exhibited here is per-turn. Run-level and task-level rollups
+    exist in the same datasets and are what C6.4 actually reads, so this
+    chapter has to state the three levels and their relationship rather than
+    presenting one table. If it does not, C6.4's figures will look like they
+    come from a schema this chapter never showed.
+acceptance:
+  - Every citation id resolves in references.yaml.
+  - Every field in the schema names the decision it serves (V-V1); a field without one does not appear.
+  - The schema is exhibited on real records (V-S5) rather than proposed in the abstract.
+  - "`monitor` is defined at first appearance and appears in the Key Terms table (V-S4)."
+  - The emerging standard is dated with its status stated (A-C5), and the chapter does not advise waiting for it.
+  - What not to log gets its own treatment, with the unvalidated-field argument stated.
