@@ -1,0 +1,176 @@
+# SRD 6.7 -- Stats and post-run analysis.
+# Drafting contract per docs/srd/README.md. Written before the chapter.
+#
+# Closes Part VI and the book's build thread. This SRD claims `analyst` for
+# C6.7, one of the four roles GH-94 records as orphaned; the other three
+# remain unowned and that issue still stands.
+
+meta:
+  chapter: C6.7
+  title: Stats and post-run analysis
+  parent: P6
+section_goal: make the end of a run produce a report the reader trusts, and give them the discipline that keeps the numbers honest as the pipeline changes
+goals:
+  - id: G5.19
+    goal: The reader can produce a run report that answers the questions Part VI raised, from records rather than from recollection.
+  - id: G5.20
+    goal: The reader can tell variation that is the pipeline behaving normally from variation that is something having happened, and stop investigating the first.
+  - id: G5.21
+    goal: The reader can check their own statistics against the source, having seen how measurement code goes wrong quietly.
+  - id: G6.12
+    goal: "The reader has instrumented their own composition: monitor and collector agents joining per-task records into a run report, so the receipts they learned to read in this part are their own (declarative form at GH-114)."
+chain:
+  - id: Q8
+    owns: partial
+    note: >
+      C6.7 closes Q8 by making the answer routine. Everything before it taught
+      a reading; this chapter makes the reading happen without anyone
+      remembering to do it, which is the difference between having measured a
+      run once and having an instrumented pipeline.
+constitutions:
+  - file: ../constitutions/voice.yaml
+    rules: [V-S1, V-S4, V-S5, V-S6, V-S7, V-P1, V-V5]
+    note: >
+      V-S5 governs a build chapter. V-P1: the stats defects are stated as what
+      they were -- wrong numbers presented confidently -- since softening them
+      would undercut the chapter's own argument for checking.
+  - file: ../constitutions/argument.yaml
+    rules: [A-C1, A-C2, A-C3, A-C6, A-X1]
+    note: >
+      A-C3: the three recorded stats defects came before any framework was
+      borrowed, and the manufacturing vocabulary is fitted to them afterwards
+      rather than the reverse.
+objective: >
+  It closes the part by making measurement routine and then defending it
+  against itself. The report comes first: the questions the earlier chapters
+  asked have answers that can be computed at the end of every run, and a
+  reader who has followed the build now assembles them into one artifact. The
+  chapter then borrows the distinction that makes a report actionable -- some
+  variation is the process behaving as it does and some is something having
+  happened, and treating the first as a signal is the classic waste. That
+  framing is why a generation pipeline benefits from being read as a
+  manufacturing process rather than as a series of events. The chapter's
+  sharpest section is about the measurement code itself, because this corpus
+  records three defects in its own statistics: numbers read from the wrong
+  place, per-task deltas computed wrongly, and a task count built from the
+  wrong source. All three produced confident output, which is worse than
+  producing none, and the chapter ends on the discipline that catches them.
+prior_material:
+  - path: declarative-agents
+    offers: >
+      the monitor and collector agents in the catalog (GH-114):
+      instrumentation as agents in the composition rather than code bolted
+      around it
+  - path: cobbler-scaffold
+    offers: >
+      The generation report as implemented, and three recorded defects in the
+      statistics that produce it: GH-1445, where requirements progress was
+      read from the working directory instead of the generation branch;
+      GH-1449, where per-task LOC deltas were wrong for some completed tasks;
+      and GH-1450, where the task table was built from the GitHub API and
+      undercounted against local history. All closed, so each wrong number can
+      be shown beside what made it wrong. The Analyzer component is where this
+      work lives in the orchestrator.
+  - path: go-unix-utils
+    offers: >
+      GH-2627, a recurring post-generation cleanup checklist, which is the
+      form the discipline takes when it stops being a thing someone remembers.
+      Also the analysis/datasets/ tree itself as the worked example of a run
+      report's outputs.
+  - path: agentic-coding-book
+    offers: >
+      This repository's own audit as the same idea in a different domain -- a
+      check that runs every time and fails the build rather than producing a
+      report nobody reads.
+citations:
+  - id: shewhart1931
+    role: anchor
+    note: >
+      Common-cause and special-cause variation. A run whose cost differs from
+      the last is usually the process, and investigating it as an event is the
+      waste the distinction was invented to prevent. The chapter borrows this
+      and states what it is not inheriting -- there is no controlled process
+      here, and the bounds are empirical rather than derived.
+  - id: avizienis2004
+    role: evidence
+    note: >
+      Carried forward from C5.8 for the stats defects, which are the same
+      shape: an error present in the measurement code long before anyone saw a
+      wrong number, and visible only when someone checked against the source.
+  - id: jones1978
+    role: context
+    note: the standing warning about what goes in the report -- a metric that is easy to compute and easy to misread will be misread, and the report is where that choice is made
+  - id: sigelman2010
+    role: context
+    note: sampling as the reason a report states its coverage, carried forward from C6.2 so the report's denominators are part of its design rather than a caveat
+content:
+  - say: "The end of a run is where the questions this part asked get answered, and the answers should be produced without anyone deciding to produce them."
+    cites: []
+  - say: "A report is only actionable if it separates variation that is the process from variation that is an event, which is a distinction older than software."
+    cites: [shewhart1931]
+  - say: "What is borrowed is the distinction and not the controlled process: the bounds here are whatever the last thirty runs did, not a specification."
+    cites: [shewhart1931]
+  - say: "The report has to state its coverage, because a rate computed over the tasks that happened to be instrumented is not a rate over the run."
+    cites: [sigelman2010]
+  - say: "The statistics themselves go wrong, and this pipeline's did three times: read from the wrong place, computed wrongly per task, and counted from the wrong source."
+    cites: []
+  - say: "Each produced a confident number, which is worse than producing none, because nothing about a wrong total looks wrong."
+    cites: [avizienis2004]
+  - say: "What goes in the report is itself a choice, and a metric that is easy to compute and easy to misread will be misread."
+    cites: [jones1978]
+  - say: "So the last discipline is checking the measurement against the source it claims to summarise, on a schedule rather than on suspicion."
+    cites: []
+apparatus:
+  objectives:
+    - Produce a run report from records rather than recollection.
+    - Separate process variation from events, and stop investigating the first.
+    - Check the measurement code against its source.
+    - Instrument your own harness end to end.
+  sidebars:
+    - type: Good Practice
+      about: running the cleanup and the checks on a schedule rather than when something looks wrong, since a wrong number does not look wrong
+    - type: Common Error
+      about: investigating a run that cost more than the last one, when the spread across recent runs already contains the difference
+    - type: From the Field
+      about: the statistic that was wrong for months, what it was read from, and what finally exposed it
+  key_terms: [analyst]
+figures:
+  - shows: "A run report with each figure annotated by the dataset it was computed from and the coverage it is over, and recent runs plotted so ordinary spread is visible."
+    status: planned
+links:
+  requires: [C6.2, C6.3, C6.4, C6.5, C6.6]
+  supports: []
+gaps:
+  - >
+    `analyst` is assigned to this chapter by GH-70, having sat at part level
+    marked P5 while no Part V chapter claimed it. The assignment is
+    evidence-backed -- cobbler-scaffold implements an Analyzer, and this is
+    the chapter where post-run interpretation is specified -- but the
+    glossary's definition includes diagnosing errors and recognising recurring
+    issues, which is C6.3's subject as much as this chapter's. The definition
+    should narrow to post-run interpretation or the two chapters should agree
+    a split. GH-94's other three roles remain unowned and that issue stands.
+  - >
+    The manufacturing framing is borrowed into a setting with no controlled
+    process, and the chapter has to bound that carefully or it will read as
+    more rigorous than it is. Control limits assume a stable process being
+    monitored; a generation pipeline changes between runs, often because of
+    what the last report said. The honest version keeps the common-cause and
+    special-cause distinction and drops the apparatus, and the acceptance
+    criteria require the chapter to say which half it took.
+  - >
+    The build deliverable here depends on the reader's harness from Part III
+    and their orchestrator from Part V, so it is the last link in a chain that
+    began four parts earlier. If a reader has followed the argument without
+    building, this chapter has nothing to instrument. The drafter should state
+    that dependency at the top rather than discovering it in the build
+    section, and G6.12 is written on the assumption that C3.3, C5.5, C5.6 and
+    C5.9 were built.
+acceptance:
+  - Every citation id resolves in references.yaml.
+  - The reader ends with an instrumented harness producing a report (V-S5), not a description of one.
+  - The borrowed framing states what it does not inherit (A-C6) -- no controlled process, empirical bounds.
+  - Each stats defect names its issue and what made the number wrong (A-C2, A-C3).
+  - The report states its own coverage, since Part VI's figures are over instrumented subsets rather than whole runs.
+  - "`analyst` is defined at first appearance and appears in the Key Terms table (V-S4)."
+  - Part VI closes having made measurement routine, which is what distinguishes its claim from a chapter of metrics.

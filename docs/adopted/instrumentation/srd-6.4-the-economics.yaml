@@ -1,0 +1,185 @@
+# SRD 6.4 -- The economics.
+# Drafting contract per docs/srd/README.md. Written before the chapter.
+#
+# The chapter most likely to be quoted and most likely to be quoted wrongly.
+# V-V5 binds harder here than anywhere else in the book: every figure arrives
+# with the context that makes it honest, in the same breath.
+
+meta:
+  chapter: C6.4
+  title: The economics
+  parent: P6
+section_goal: teach the reader to read their own receipt, and to distrust the per-line number that reading produces
+goals:
+  - id: G5.10
+    goal: The reader can account for where a run's money went, at the granularity of tasks rather than of runs.
+  - id: G5.11
+    goal: The reader can identify the fixed cost a task carries before it does any work, and recognise what that floor implies about task sizing.
+  - id: G5.12
+    goal: The reader can say what a cost-per-line figure does and does not establish, and refuse to compare two pipelines with it.
+chain:
+  - id: Q8
+    owns: partial
+    note: >
+      Cost is the measurement that most changes behaviour and most often
+      changes it wrongly. C6.3 taught reading for waste; C6.4 reads for money,
+      and its contribution to Q8 is the deflation -- knowing what the agents
+      did includes knowing which numbers about them mean nothing.
+constitutions:
+  - file: ../constitutions/voice.yaml
+    rules: [V-S1, V-S2, V-S6, V-V4, V-V5, V-P1, V-P2]
+    note: >
+      V-V5 is the chapter's governing rule and its acceptance criteria enforce
+      it structurally: no impressive figure appears without its deflation in
+      the same passage. V-P2: no cost figure is used to sell the method.
+  - file: ../constitutions/argument.yaml
+    rules: [A-C1, A-C2, A-C5, A-C6, A-X1, A-X2]
+    note: >
+      A-C2 admits no exception here. A-C5: every price is a dated observation
+      about a market that moves faster than the book. A-C6: one pipeline, one
+      language, one problem domain -- the magnitudes do not generalise and the
+      chapter says so before it gives any.
+objective: >
+  It teaches the reader to read a receipt and then teaches them to distrust
+  the summary line on it. The accounting is per task, because a run-level
+  total hides everything worth knowing: the median task in this corpus costs
+  about a dollar and the most expensive costs nearly seven, and no run-level
+  figure would show that. The chapter's sharpest finding is the floor. Fitting
+  cost against requirement count across this corpus gives a slope of about a
+  penny per requirement on an intercept of about $1.32, which means a task
+  costs roughly a dollar and a third before it does any work, and what it is
+  asked to do barely moves the number. That single fact deflates cost per
+  line, because a pipeline can halve its cost per line by making tasks twice
+  as big without becoming any more efficient. The chapter therefore gives the
+  per-line figure, gives the fifty-year-old reason the denominator is bad, and
+  refuses to use it to compare anything.
+prior_material:
+  - path: go-unix-utils
+    offers: >
+      analysis/datasets/economics_summary.yaml, read at GH-70: cost per kLOC
+      of $10.14 mean and $9.78 median over the 28 runs with LOC recorded; cost
+      per requirement of $0.4664 mean and $0.4482 median over 113 SRDs;
+      cache hit rates with a within-run median of
+      44.23% in run gh-4209-run42 across its 445 tasks and an across-run
+      median of 45.68% over 38 runs; cmd/ls as the most expensive utility at
+      $20.74 average; and a same-utility coefficient of variation reaching
+      1.88, worst for pkg/format, across the 30 utilities with three or more
+      runs.
+  - path: go-unix-utils
+    offers: >
+      analysis/datasets/specs_summary.yaml, which is the floor's real
+      evidence and was read at GH-71. Every fit from a specification property
+      to cost is flat: requirement count against cost has an r-squared of
+      0.00022 over 2,367 tasks, specification text length 0.00037, and
+      specification weight 0.0000023. Weight against duration is 0.00093. The
+      fitted intercepts -- $1.315, $1.326, $1.347 -- are within cents of the
+      mean task cost of $1.354, because a line with no slope is the mean.
+      Nothing measured about a specification predicts what its task will cost.
+  - path: go-unix-utils
+    offers: >
+      analysis/datasets/waste_summary.yaml for the per-task distribution --
+      median task cost $1.0886, mean $1.354, p95 $2.9577, maximum $6.6993
+      across 2,706 tasks -- which is what makes the floor visible against the
+      typical task rather than against a run total.
+  - path: meshintelligence.substack.com/how-to-glm-52-on-opencode
+    offers: >
+      A cost decision made on a fixed subscription rather than metered tokens,
+      which is the structural point the chapter needs: the price of the same
+      work depends on the billing arrangement as much as on the work.
+citations:
+  - id: jones1978
+    role: anchor
+    note: >
+      Lines of code as a denominator, and why it misleads -- it rewards
+      verbosity and varies by language, so the same work measures differently.
+      The chapter's deflation is not a modern caveat; the objection is as old
+      as the metric.
+  - id: kwa2025
+    role: context
+    note: the capability trend that makes any price in this chapter a dated observation, since what a dollar buys is moving in both directions at once
+  - id: cemri2025
+    role: evidence
+    note: coordination overhead as a cost line rather than a quality risk, which is what connects this chapter's floor to Part V's price for orchestration
+  - id: liu2023
+    role: evidence
+    note: why cache reads dominate token spend in a long run, and therefore why a cache-hit rate is an economic figure rather than a performance one
+content:
+  - say: "A run total tells you almost nothing; the accounting has to be per task, because that is the level where the variation lives."
+    cites: []
+  - say: "In this corpus the median task costs about a dollar, the mean is a third higher, and the most expensive single task cost just under seven."
+    cites: []
+  - say: "Nothing measured about a specification predicts what its task costs: requirement count, text length, and weight all fit cost with an r-squared near zero."
+    cites: []
+  - say: "So the cost is effectively a per-task constant, and the fitted lines are flat at the mean rather than sloping with the work asked."
+    cites: []
+  - say: "That constant is the floor, and it is the whole argument about task sizing -- it is also what makes cost per line a number nobody should compare with."
+    cites: [jones1978]
+  - say: "A pipeline halves its cost per line by doubling its task size, having changed nothing about how efficiently it works."
+    cites: [jones1978]
+  - say: "Cache reads are where the tokens actually go in a long run, so a cache-hit rate belongs on the receipt beside the dollars."
+    cites: [liu2023]
+  - say: "The same utility generated in different runs varies enormously in cost, which is the figure that should stop anyone quoting a single price for a piece of work."
+    cites: []
+  - say: "Coordination is a line on this receipt rather than a quality risk, which is where Part V's price for orchestration shows up in money."
+    cites: [cemri2025]
+  - say: "Every price here is dated, about one pipeline, in one language, on one billing arrangement, and none of those four qualifications is decorative."
+    cites: [kwa2025]
+apparatus:
+  objectives:
+    - Account for a run's cost at task granularity.
+    - Identify the fixed cost a task carries before it does any work.
+    - Say what cost per line does not establish, and refuse the comparison.
+  sidebars:
+    - type: Performance Observation
+      about: the per-task cost distribution with its percentiles, which is the instrument the rest of the chapter reads
+    - type: Common Error
+      about: comparing two pipelines by cost per line, when the ratio is dominated by task size and by how verbose the target language is
+    - type: From the Field
+      about: the same utility costing several times more in one run than another, and what the logs said the difference was
+  key_terms: []
+  key_terms_note: >
+    definitions.yaml assigns no term here. If the chapter coins one for the
+    per-task floor, it reaches the glossary in the same unit (contract rule 2).
+figures:
+  - shows: "Cost against requirement count for every task with both recorded, with the fitted line and its intercept marked, so the floor is visible as the line's height at zero."
+    status: planned
+links:
+  requires: [C2.3, C5.9, C6.2, C6.3]
+  supports: [C6.5, C6.7]
+gaps:
+  - >
+    outline.yaml specifies this chapter around "$139.24 for 44,628 lines" and
+    neither number reproduces from the datasets. economics_summary.yaml
+    records a peak production LOC of 45,789 and a latest of 32,975, so 44,628
+    is plausibly a snapshot between the two, and no cost figure of $139.24
+    appears anywhere. Worse, the pair is internally inconsistent with the
+    corpus: $139.24 over 44,628 lines is $3.12 per kLOC against a corpus
+    median of $9.78, so the two numbers are not from the same scope. This SRD
+    is written against the reproducible figures instead. Recorded under GH-92,
+    which covers outline.yaml's numeric claims as a class. Verified
+    2026-08-14 at GH-70.
+  - >
+    The cost-per-requirement figure has two incompatible readings in one file
+    and the chapter must pick and say which. economics_summary.yaml reports a
+    cost_per_requirement block at $0.3032 derived from only 2 runs, and a
+    requirement_cost_pdf block at $0.4482 median derived from 113 SRDs. The
+    second is the defensible one and the first should not appear, but a
+    drafter reading the file top to bottom will meet the weaker number first.
+  - >
+    Resolved at GH-71, and the answer changed the chapter. The fit quality is
+    recorded after all, in analysis/datasets/specs_summary.yaml, and every
+    specification-property-to-cost fit is flat: r-squared of 0.00022 for
+    requirement count, 0.00037 for text length, 0.0000023 for weight. The
+    intercept is therefore not a slope's floor but the mean, which the
+    per-task distribution gives directly. The chapter is stronger for it --
+    the finding is not "a task costs $1.32 plus a penny per requirement" but
+    "no measured property of a specification predicts what its task will
+    cost", which is a harder claim and a better one. srd-6.5 takes the same
+    evidence from the other side.
+acceptance:
+  - Every citation id resolves in references.yaml.
+  - Every figure names the dataset file it was read from (A-C2); no number in this chapter is unattributed.
+  - No impressive figure appears without its deflation in the same passage (V-V5).
+  - The per-line figure is given and then explicitly disqualified as a comparison instrument, with the reason (A-X2).
+  - The four qualifications -- dated, one pipeline, one language, one billing arrangement -- are stated before any price (A-C5, A-C6).
+  - The floor is supported either by a fit whose quality is stated or by the per-task distribution, not by an intercept quoted without its regression.

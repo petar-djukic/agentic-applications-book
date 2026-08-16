@@ -1,0 +1,167 @@
+# SRD 6.5 -- Building intuition.
+# Drafting contract per docs/srd/README.md. Written before the chapter.
+#
+# The corpus contains an attempt to automate this chapter's subject, and the
+# attempt's limits are more instructive than its accuracy. This SRD is
+# written around that.
+
+meta:
+  chapter: C6.5
+  title: Building intuition
+  parent: P6
+section_goal: turn accumulated run data into a working sense of which tasks will go badly, and feed that sense back into how requirements are written
+goals:
+  - id: G5.13
+    goal: The reader can name the task properties that predicted trouble in their own runs, from the record rather than from memory.
+  - id: G5.14
+    goal: The reader can rewrite a requirement to avoid a shape their data says is expensive.
+  - id: G5.15
+    goal: The reader can say why this prediction resists being handed to a model, and what that implies about where their judgement is still needed.
+chain:
+  - id: Q8
+    owns: partial
+    note: >
+      C6.3 and C6.4 read runs that have happened. C6.5 is where measurement
+      starts changing what gets written before the next run, which is the
+      point at which Q8 stops being retrospective and closes the loop back to
+      Q2's specification work.
+constitutions:
+  - file: ../constitutions/voice.yaml
+    rules: [V-S1, V-S2, V-S5, V-S6, V-V4, V-V5]
+    note: >
+      V-V4: the reader derives their own predictors from their own data; no
+      list of expensive task shapes is prescribed, because the shapes are a
+      property of the pipeline and not of agents in general. V-V5: the
+      predictive model in the corpus is reported with what it cannot do.
+  - file: ../constitutions/argument.yaml
+    rules: [A-C1, A-C2, A-C6, A-X1, A-X2]
+    note: >
+      A-X2: this chapter is the most tempting place in the book to claim more
+      than the evidence carries, since "you develop a feel for it" resists
+      measurement. The corpus's own attempt to formalise it is the check.
+objective: >
+  It takes the reader from reading past runs to anticipating the next one.
+  The method is ordinary and the chapter states it plainly: the properties
+  that predicted trouble are found by joining task outcomes back to task
+  descriptions and looking at what the expensive tail has in common, which is
+  a query rather than an intuition until it has been run a few times. The
+  chapter's real contribution is the honest boundary. This corpus contains an
+  attempt to automate exactly this -- a fitted model over task features -- and
+  what it shows is where the difficulty lies: it predicts tool-call counts
+  rather than cost, most of its features are outcomes that are only known
+  after the task has run, and its accuracy collapses on the target that would
+  matter most. So the chapter closes by saying what the intuition is for. It
+  is the thing that reshapes a requirement before it is written, and it feeds
+  Part II rather than the pipeline.
+prior_material:
+  - path: go-unix-utils
+    offers: >
+      analysis/datasets/proxy_model_metrics.yaml, read at GH-70: models fitted
+      over 535 training rows from 2,574 tasks, predicting tool-call counts.
+      The best target, total tool calls, reaches a test R-squared of 0.7113
+      with a random forest; the rest fall away steadily -- bash calls 0.5229,
+      read calls 0.4291, edit calls 0.2572, go vet calls 0.1384 -- and failed
+      build calls come out at -0.0304, which is worse than predicting the
+      mean. Of its thirteen features, only four are known before a task runs.
+  - path: go-unix-utils
+    offers: >
+      analysis/datasets/quality_summary.yaml and the per-task cost and turn
+      data behind C6.3 and C6.4, which is where the expensive tail is
+      identified before anything is predicted about it.
+  - path: go-unix-utils
+    offers: >
+      analysis/datasets/specs_summary.yaml, read at GH-71, which rules out the
+      obvious predictors before the chapter proposes any: requirement count,
+      specification text length, and specification weight each fit cost with an
+      r-squared below 0.001 over roughly 2,350 tasks. Whatever predicts an
+      expensive task, it is not how much the specification asks for.
+  - path: cobbler-scaffold
+    offers: the requirement text the tasks were generated from, without which outcomes cannot be joined back to the properties that produced them
+citations:
+  - id: wang2024
+    role: evidence
+    note: >
+      The defect classes generated code falls into, which is the vocabulary
+      for what the expensive tail usually turns out to have in common --
+      ambiguity that the model resolved plausibly and wrongly.
+  - id: kambhampati2024
+    role: context
+    note: >
+      Why the judgement stays with the programmer. The model is useful inside
+      a structure and not as the thing that decides, which is the same
+      conclusion this chapter reaches from a different direction.
+  - id: jones1978
+    role: context
+    note: carried forward from C6.4 as the warning against the obvious shortcut -- predicting cost per line rather than cost per task reintroduces the denominator problem
+content:
+  - say: "Intuition here is not a mystery: it is the result of having joined outcomes back to descriptions enough times that the query stops needing to be run."
+    cites: []
+  - say: "The expensive tail usually has something in common, and in this corpus it is the shape of the requirement rather than the size of it."
+    cites: [wang2024]
+  - say: "Size in particular is not it: requirement count, specification length, and specification weight all fit task cost with an r-squared near zero, so bigger asks do not cost more."
+    cites: []
+  - say: "The obvious next step is to fit a model, and the corpus contains one, which is more useful for its failures than its fit."
+    cites: []
+  - say: "It predicts tool calls rather than cost, most of its inputs are only known after the task has run, and on failed builds it does worse than predicting the average."
+    cites: []
+  - say: "That is not a defect of the modelling; it is the shape of the problem, and it says the useful prediction happens where the requirement is written rather than where the task is scheduled."
+    cites: [kambhampati2024]
+  - say: "So the output of this chapter is a change to Part II's practice: the properties your data says are expensive become things you write differently."
+    cites: []
+apparatus:
+  objectives:
+    - Find the properties that predicted trouble in your own runs.
+    - Rewrite a requirement to avoid an expensive shape.
+    - Say why this prediction resists automation.
+  sidebars:
+    - type: Good Practice
+      about: joining task outcomes back to the requirement text that produced them, which is the query that turns run data into a predictor
+    - type: Common Error
+      about: predicting cost from features that are only known once the task has run, which produces a model that describes the past and forecasts nothing
+    - type: From the Field
+      about: the requirement shape that kept producing expensive tasks, and how it was rewritten once the pattern was visible
+  key_terms: []
+  key_terms_note: >
+    definitions.yaml assigns no term here. If the chapter coins one for the
+    expensive-shape category, it reaches the glossary in the same unit
+    (contract rule 2).
+figures:
+  - shows: "The expensive tail of tasks with their requirement properties beside them, separating the properties known before the run from those known only after."
+    status: planned
+links:
+  requires: [C2.3, C2.4, C6.3, C6.4]
+  supports: [C6.7]
+gaps:
+  - >
+    outline.yaml promises the reader will predict expensive tasks "before they
+    run", and the corpus does not support that as stated. The fitted model in
+    proxy_model_metrics.yaml uses thirteen features of which nine -- token
+    counts, duration, LOC deltas, insertions and deletions -- are outcomes,
+    leaving only whether the task is a contract and which of three kinds it
+    is. Either a model is refitted on pre-run features alone during drafting,
+    which would give the chapter a real number, or the chapter claims what the
+    evidence carries: the intuition is human, trained on instrumented runs,
+    and the attempt to formalise it is reported for what it reveals rather
+    than as a tool the reader receives. This SRD is written for the second.
+    Verified 2026-08-14 at GH-70.
+  - >
+    The chapter's three named predictors in the outline -- compound scope,
+    behaviour interactions, byte-level matching -- are not evidenced anywhere
+    this SRD searched. They read as the author's own accumulated judgement,
+    which is exactly what the chapter is about, so they belong as field
+    observation with that provenance stated (A-C3) rather than as findings.
+    If the join described in the objective is run during drafting, they can be
+    checked against it, and the chapter is much stronger if even one of them
+    survives contact with the data.
+  - >
+    The feedback into Part II has to land somewhere concrete or it stays a
+    gesture. C2.3 and C2.4 own requirements and specifications, and neither
+    SRD currently anticipates receiving a revision from Part VI. One of the
+    three should carry the link explicitly, and this SRD proposes C6.5 states
+    it, since it is the chapter that knows what the revision is.
+acceptance:
+  - Every citation id resolves in references.yaml.
+  - The method for finding predictors is given as a query the reader runs on their own data (V-S5), not as a list of expensive shapes to memorise (V-V4).
+  - The corpus's fitted model is reported with its limits in the same passage (V-V5), including the negative result on failed builds.
+  - The pre-run versus post-run feature distinction is stated, since it is the reason the chapter cannot promise what the outline promised.
+  - The chapter names what Part II should do differently, concretely enough that C2.3 or C2.4 could act on it.

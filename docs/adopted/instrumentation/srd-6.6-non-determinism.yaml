@@ -1,0 +1,156 @@
+# SRD 6.6 -- Non-determinism.
+# Drafting contract per docs/srd/README.md. Written before the chapter.
+#
+# The corpus contains a measured cascade and the structural fix for it, so
+# this chapter can trace one instance end to end rather than arguing that
+# variance exists.
+
+meta:
+  chapter: C6.6
+  title: Non-determinism
+  parent: P6
+section_goal: show how small output variance becomes large cost variance through a pipeline, and what can be made deterministic once that path is visible
+goals:
+  - id: G5.16
+    goal: The reader can state why identical prompts produce different results, and stop treating it as a configuration mistake.
+  - id: G5.17
+    goal: The reader can trace how variance in one step becomes variance in the next, and find the amplifying step in their own pipeline.
+  - id: G5.18
+    goal: The reader can remove a source of variance by changing the pipeline's structure, having decided which variance is worth removing.
+chain:
+  - id: Q8
+    owns: partial
+    note: >
+      Q8 asks how you know what the agents did. C6.6 is the answer's limit
+      case: two runs of the same input are not the same run, so any
+      measurement is of a distribution and a single run is one sample from it.
+      Every figure in Part VI depends on this chapter being read.
+constitutions:
+  - file: ../constitutions/voice.yaml
+    rules: [V-S1, V-S2, V-S5, V-S6, V-P1, V-V5]
+    note: >
+      V-P1: non-determinism is stated as a property of the mechanism, not
+      hedged into unpredictability. V-V5: the measured cascade is impressive
+      and arrives with the fact that it is one comparison of two runs.
+  - file: ../constitutions/argument.yaml
+    rules: [A-C1, A-C2, A-C3, A-C4, A-C6]
+    note: >
+      A-C4: the variance rests on C1.5's sampling mechanism, which the book
+      has already established, so this chapter extends rather than re-derives
+      it. A-C3: the cascade was measured in a run before the literature was
+      consulted.
+objective: >
+  It explains why the same prompt does not give the same run, and then does
+  the more useful thing, which is to trace the amplification. Sampling makes
+  each turn's output a draw rather than a value, and the book established that
+  mechanism in Part I. What this chapter adds is what happens when draws
+  compose: a turn's reasoning becomes the next turn's input, so a variation
+  that would be harmless in one response is carried forward and multiplied.
+  The corpus records one such path precisely -- two back-to-back runs of the
+  same step whose thinking blocks differed roughly twofold, producing 66% more
+  output tokens, 2% more input tokens, and 18% more cost -- and, better, it
+  records the fix, which was structural rather than a parameter: remove the
+  second turn, so the first turn's reasoning never becomes input at all. The
+  chapter generalises that into the reader's question: find the step where a
+  small difference becomes a large one, and decide whether it is worth
+  restructuring.
+prior_material:
+  - path: go-unix-utils
+    offers: >
+      GH-5, a reproducibility comparison of two back-to-back runs of the same
+      step, and GH-7, which diagnoses the cascade and proposes the fix: the
+      measure step took two turns because the model wrote its output through a
+      tool, so turn one's thinking entered turn two's input. The recorded
+      figures are a thinking block of 6,957 against 14,252 characters, 66%
+      more output tokens, 2% more input tokens, and 18% higher cost. Both
+      closed, so the fix is readable beside the diagnosis.
+  - path: go-unix-utils
+    offers: >
+      analysis/datasets/economics_summary.yaml for the variance that remains
+      after such fixes: across the 30 utilities generated in three or more
+      runs, the coefficient of variation of cost reaches 1.88, worst for
+      pkg/format. That is the residual this chapter has to explain rather than
+      explain away.
+  - path: cobbler-scaffold
+    offers: the single-turn measure step as implemented, which is what the structural fix looks like in code
+citations:
+  - id: ouyang2024
+    role: anchor
+    note: >
+      Non-determinism in code generation measured across benchmarks rather
+      than anecdotally, including at temperature zero -- which is the result
+      that settles the reader's first objection before they raise it.
+  - id: liu2023
+    role: evidence
+    note: why a longer accumulated context is not a neutral carrier of the previous turn's output, so composition changes attention as well as token counts
+  - id: kwa2025
+    role: context
+    note: the moving baseline that makes a reproducibility claim perishable, since the model behind a run is itself replaced on a shorter cycle than the book's edition
+  - id: cemri2025
+    role: context
+    note: variance as a system-design concern rather than a model property, which is the framing that makes the structural fix the obvious one
+content:
+  - say: "The same prompt does not give the same run, and this is a property of how the output is produced rather than a setting someone left wrong."
+    cites: [ouyang2024]
+  - say: "Turning the temperature down narrows the draw and does not remove it, which is measured rather than argued."
+    cites: [ouyang2024]
+  - say: "What matters for a pipeline is not that one turn varies but that turns compose: one turn's reasoning becomes the next turn's input."
+    cites: [liu2023]
+  - say: "The corpus records the cascade with numbers -- one step's thinking block varying about twofold, carrying through to 66% more output tokens and 18% more cost."
+    cites: []
+  - say: "The fix was structural and not a parameter: remove the second turn, and the first turn's reasoning never becomes input."
+    cites: [cemri2025]
+  - say: "Some variance survives every such fix, and the same utility built in different runs still varies enormously in cost."
+    cites: []
+  - say: "So reproducibility is a property to buy deliberately in the places it pays, not a state the pipeline can be put into."
+    cites: [kwa2025]
+apparatus:
+  objectives:
+    - Say why identical prompts produce different results.
+    - Trace how variance in one step amplifies in the next.
+    - Remove a variance source structurally, and decide which are worth removing.
+  sidebars:
+    - type: Common Error
+      about: treating temperature as a determinism switch, and concluding the pipeline is broken when identical inputs diverge anyway
+    - type: Good Practice
+      about: measuring the same step twice before optimising it, since a difference between two runs may be the distribution rather than the change
+    - type: Performance Observation
+      about: the cost spread for one utility across runs, which is what a single-run cost estimate is actually a sample from
+  key_terms: []
+  key_terms_note: >
+    definitions.yaml assigns no term here; `sampling` is C1.5's and this
+    chapter extends it rather than re-coining it (contract rule 2).
+figures:
+  - shows: "Two runs of the same step side by side, with the thinking block, output tokens, and cost of each marked, and an arrow showing where turn one's output entered turn two's input."
+    status: planned
+links:
+  requires: [C1.5, C6.2, C6.3]
+  supports: [C6.4, C6.7]
+gaps:
+  - >
+    The cascade is one comparison of two runs of one step (GH-5, GH-7), and
+    the chapter must say so wherever the figures appear. Two runs establish
+    that the path exists and give its magnitude on that occasion; they do not
+    establish a typical amplification factor, and 66% will be read as one if
+    it is not qualified in the same sentence (A-C6, V-V5).
+  - >
+    Whether the structural fix worked is not recorded anywhere this SRD found.
+    GH-7's acceptance criteria state what identical input token counts would
+    look like after the change, and no dataset in the corpus reports the
+    before-and-after. That measurement is cheap to make and would turn the
+    chapter's strongest section from a proposal into a result, so it is worth
+    doing before drafting rather than after.
+  - >
+    The residual variance needs an explanation the chapter can stand behind. A
+    coefficient of variation of 1.88 for one utility across runs is not
+    sampling noise at the turn level, and the likely causes -- different
+    requirement text between runs, different model versions, retries included
+    in the total -- are separable in the datasets. If they are not separated,
+    the chapter should present the figure as unexplained rather than implying
+    it is all non-determinism, which would overstate this chapter's subject.
+acceptance:
+  - Every citation id resolves in references.yaml.
+  - Non-determinism is derived from C1.5's sampling mechanism (A-C4), not re-argued from scratch.
+  - The cascade figures name their issues and their scope -- two runs, one step -- in the same passage (A-C2, A-C6).
+  - The fix is presented as structural, and its unverified status is stated unless the before-and-after is measured before drafting.
+  - The residual variance is either attributed or explicitly labelled unexplained; it is not absorbed into this chapter's subject by default.
