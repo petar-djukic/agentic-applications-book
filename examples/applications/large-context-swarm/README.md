@@ -17,9 +17,15 @@ must satisfy is
 the work is tracked under
 [epic #20](https://github.com/petar-djukic/agentic-applications-book/issues/20).
 
+The blackboard blocks this module composes are already here, as the
+`knowledge-manager` catalog family
+([`../../catalog/agents/knowledge-manager/`](../../catalog/agents/knowledge-manager/),
+contract in
+[`docs/srd/srd-knowledge-manager.yaml`](../../docs/srd/srd-knowledge-manager.yaml)).
+This module references them; it copies nothing.
+
 | Arriving in | Content |
 |---|---|
-| [#26](https://github.com/petar-djukic/agentic-applications-book/issues/26) | The blackboard blocks, as a catalog family this module references |
 | [#24](https://github.com/petar-djukic/agentic-applications-book/issues/24) | `agents/rlm-root/` and `agents/rlm-worker/` |
 | [#25](https://github.com/petar-djukic/agentic-applications-book/issues/25) | `testdata/` fixture corpus and `demo.yaml` |
 
