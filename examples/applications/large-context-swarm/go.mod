@@ -10,7 +10,7 @@ module github.com/petar-djukic/agentic-applications-book/examples/applications/l
 go 1.26.3
 
 require (
-	github.com/Nokia-Bell-Labs/declarative-agents/agent-core v0.20260803.0
+	github.com/Nokia-Bell-Labs/declarative-agents/agent-core v0.20260803.1-0.20260815014700-f3e1f68d379c
 	gopkg.in/yaml.v3 v3.0.1
 )
 

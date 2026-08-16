@@ -5,6 +5,138 @@
 # catalog memory-write block's and are selected in tools.yaml, not
 # redeclared here (srd-large-context-swarm C10).
 tools:
+  - name: capture_request
+    type: builtin
+    init: compose
+    visibility: internal
+    category: response
+    description: Republish the request seed as an addressable command-state value.
+    problem: |
+      The --request file's bytes are the initial Seed Result.Output
+      (runtime contract), so only the run's first word can read them as
+      the previous Result. The write path needs the record id and the
+      provenance fields after the model call, and single-hop threading
+      would have dropped them by then.
+    goals:
+      - Select every request field from the seed with $.field selectors.
+      - Republish the query fields verbatim so embed_intent reads them as its previous Result.
+      - Publish the whole set under one label the write path addresses.
+    requirements:
+      input:
+        - The request seed, read as this word's previous Result.
+      output:
+        - One JSON object repeating every seed field.
+      errors:
+        - Compose failures emit CommandError; an absent field renders empty and is reported as a diagnostic.
+    non_goals:
+      - Does not read model text; nothing has run yet.
+      - Does not validate the request; a missing field surfaces where it is used.
+    parameters: {type: object, properties: {}, additionalProperties: false}
+    emits: [RequestCaptured, CommandError]
+    output:
+      description: The request fields, addressable as $from(request).<field>.
+      schema:
+        type: object
+        properties:
+          content: {type: string}
+          collection: {type: string}
+          where: {type: object}
+          where_document: {type: object}
+          n_results: {type: integer}
+          id: {type: string}
+          source: {type: string}
+          agent: {type: string}
+          round: {type: integer}
+        required: [content, collection, where, where_document, n_results, id, source, agent, round]
+    side_effects: []
+    reversibility: {classification: reversible}
+    undo: {strategy: noop, description: Publishing request fields changes no external state.}
+    relationships:
+      before: [embed_intent]
+    config:
+      signal: RequestCaptured
+      inputs:
+        content: $.content
+        collection: $.collection
+        where: $.where
+        where_document: $.where_document
+        n_results: $.n_results
+        id: $.id
+        source: $.source
+        agent: $.agent
+        round: $.round
+      template: |-
+        {"content": {{ json content }},
+         "collection": {{ json collection }},
+         "where": {{ json where }},
+         "where_document": {{ json where_document }},
+         "n_results": {{ n_results }},
+         "id": {{ json id }},
+         "source": {{ json source }},
+         "agent": {{ json agent }},
+         "round": {{ round }}}
+
+  - name: compose_record
+    type: builtin
+    init: compose
+    visibility: internal
+    category: response
+    description: Shape the finding into the tagged record for the write path.
+    problem: |
+      The finding is raw model text, and embed_memory selects declared
+      params from its previous Result -- content, id, collection, and
+      the provenance fields. The text has to be wrapped into that shape,
+      with every field except the content coming from the trusted
+      request (I4).
+    goals:
+      - Wrap the finding as the record content.
+      - Attach the record id, collection, and provenance from the captured request.
+    requirements:
+      input:
+        - The finding as the previous Result; the other fields from the captured request.
+      output:
+        - One JSON object shaped for the memory-write words.
+      errors:
+        - Compose or serialization failures emit CommandError.
+    non_goals:
+      - Does not let the model author the id, collection, tags, or round.
+    parameters: {type: object, properties: {}, additionalProperties: false}
+    emits: [RecordComposed, CommandError]
+    output:
+      description: The tagged record, shaped for embed_memory.
+      schema:
+        type: object
+        properties:
+          content: {type: string}
+          id: {type: string}
+          collection: {type: string}
+          source: {type: string}
+          agent: {type: string}
+          round: {type: integer}
+        required: [content, id, collection, source, agent, round]
+    side_effects: []
+    reversibility: {classification: reversible}
+    undo: {strategy: noop, description: Shaping model text changes no external state.}
+    relationships:
+      after: [compose_finding]
+      before: [embed_memory]
+    config:
+      signal: RecordComposed
+      inputs:
+        content: $.
+        id: $from(request).id
+        collection: $from(request).collection
+        source: $from(request).source
+        agent: $from(request).agent
+        round: $from(request).round
+      template: |-
+        {"content": {{ json content }},
+         "id": {{ json id }},
+         "collection": {{ json collection }},
+         "source": {{ json source }},
+         "agent": {{ json agent }},
+         "round": {{ round }}}
+
   - name: embed_intent
     type: builtin
     init: rest_client_invoke

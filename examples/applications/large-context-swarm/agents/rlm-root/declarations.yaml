@@ -5,6 +5,71 @@
 # the Final entry goes through are the catalog memory-write block's and
 # are selected in tools.yaml, not redeclared here (C10).
 tools:
+  - name: capture_request
+    type: builtin
+    init: compose
+    visibility: internal
+    category: response
+    description: Republish the request seed as an addressable command-state value.
+    problem: |
+      The --request file's bytes are the initial Seed Result.Output
+      (runtime contract), so only the run's first word can read them as
+      the previous Result. Threading is single-hop, so any field not
+      republished here is unreachable for the rest of the run --
+      exactly the failure #37 recorded, twice, against runtimes and
+      selector forms that lacked this contract.
+    goals:
+      - Select every request field from the seed with $.field selectors.
+      - Publish them under one label the rest of the machine addresses.
+    requirements:
+      input:
+        - The request seed, read as this word's previous Result.
+      output:
+        - One JSON object carrying every request field later words need.
+      errors:
+        - Compose failures emit CommandError; an absent field renders empty and is reported as a diagnostic.
+    non_goals:
+      - Does not read model text; nothing has run yet.
+      - Does not validate the request; a missing field surfaces where it is used.
+    parameters: {type: object, properties: {}, additionalProperties: false}
+    emits: [RequestCaptured, CommandError]
+    output:
+      description: The request fields, addressable as $from(request).<field>.
+      schema:
+        type: object
+        properties:
+          task: {type: string}
+          collection: {type: string}
+          anchor: {type: string}
+          n_results: {type: integer}
+          round_bound: {type: integer}
+          id: {type: string}
+          agent: {type: string}
+        required: [task, collection, anchor, n_results, round_bound, id, agent]
+    side_effects: []
+    reversibility: {classification: reversible}
+    undo: {strategy: noop, description: Publishing request fields changes no external state.}
+    relationships:
+      before: [seed_round]
+    config:
+      signal: RequestCaptured
+      inputs:
+        task: $.task
+        collection: $.collection
+        anchor: $.anchor
+        n_results: $.n_results
+        round_bound: $.round_bound
+        id: $.id
+        agent: $.agent
+      template: |-
+        {"task": {{ json task }},
+         "collection": {{ json collection }},
+         "anchor": {{ json anchor }},
+         "n_results": {{ n_results }},
+         "round_bound": {{ round_bound }},
+         "id": {{ json id }},
+         "agent": {{ json agent }}}
+
   - name: seed_round
     type: builtin
     init: compose
@@ -36,12 +101,63 @@ tools:
     reversibility: {classification: reversible}
     undo: {strategy: noop, description: Publishing a constant changes no external state.}
     relationships:
-      before: [plan_intents, increment_round]
+      after: [capture_request]
+      before: [compose_plan_input, increment_round]
     config:
       signal: RoundSeeded
       inputs: {}
       template: |-
         {"output": "1"}
+
+  - name: compose_plan_input
+    type: builtin
+    init: compose
+    visibility: internal
+    category: response
+    description: Compose the planner's input from the task and any prior-round findings.
+    problem: |
+      invoke_llm's user message is its previous Result's output. Without
+      this word the planner's user message would be the round counter,
+      and the task -- the one thing the plan is about -- would never
+      reach the model.
+    goals:
+      - Render the task as the planner's input.
+      - Include the prior round's collected handles when a prior round exists.
+    requirements:
+      input:
+        - The task from the captured request; the collected handles from the previous round where present.
+      output:
+        - Plain text the planner reads as its user message.
+      errors:
+        - On round one the collected label is unresolved; it renders empty and is reported as a diagnostic, not a failure.
+    non_goals:
+      - Does not include corpus content; the collected label carries ids and metadata only (I1).
+    parameters: {type: object, properties: {}, additionalProperties: false}
+    emits: [PlanInputComposed, CommandError]
+    output:
+      description: The planner's user message.
+      schema: {type: string}
+    side_effects: []
+    reversibility: {classification: reversible}
+    undo: {strategy: noop, description: Composing text changes no external state.}
+    relationships:
+      after: [seed_round, increment_round]
+      before: [plan_intents]
+    config:
+      signal: PlanInputComposed
+      inputs:
+        task: $from(request).task
+        round: $from(round_count).output
+        prior_ids: $from(collected).ids
+        prior_metadata: $from(collected).metadatas
+      template: |-
+        Task: {{ task }}
+
+        Round: {{ round }}
+
+        Findings already collected (record ids and metadata; empty on the first round):
+        ids: {{ json prior_ids }}
+        metadata: {{ json prior_metadata }}
 
   - name: capture_plan
     type: builtin
@@ -115,7 +231,7 @@ tools:
     undo: {strategy: noop, description: Parsing changes no external state.}
     relationships:
       after: [capture_plan]
-      before: [dispatch_worker]
+      before: [compose_worker_seed]
     config:
       source: $from(captured_plan).response
       schema:
@@ -130,34 +246,163 @@ tools:
       parsed: PlanParsed
       unparsed: ParseFailed
 
-  - name: dispatch_worker
+  - name: compose_worker_seed
     type: builtin
-    init: self_invoke
+    init: compose
+    visibility: internal
+    category: response
+    description: Compose the fields every worker request shares, as a file_write instruction.
+    problem: |
+      A dispatched worker reads its request from disk, and every field
+      of it except the intent is the same across workers -- and none of
+      those fields may be authored by a model. Rendering them once into
+      a seed file keeps the per-item dispatch word down to merging in
+      one intent.
+    goals:
+      - Render the collection, filters, and provenance the workers share.
+      - Emit the path and content params the file_write word consumes.
+    requirements:
+      input:
+        - The captured request fields and the current round.
+      output:
+        - One JSON object with path and content fields, content holding the shared worker request JSON.
+      errors:
+        - Compose or serialization failures emit CommandError.
+    non_goals:
+      - Does not include any intent; intents are the fan-out's items.
+      - Does not author filter values from model text.
+    parameters: {type: object, properties: {}, additionalProperties: false}
+    emits: [WorkerSeedComposed, CommandError]
+    output:
+      description: The file_write instruction for the shared worker seed.
+      schema:
+        type: object
+        properties:
+          parameters:
+            type: object
+            properties:
+              path: {type: string}
+              content: {type: string}
+            required: [path, content]
+        required: [parameters]
+    side_effects: []
+    reversibility: {classification: reversible}
+    undo: {strategy: noop, description: Composing text changes no external state.}
+    relationships:
+      after: [parse_plan]
+      before: [write_worker_seed]
+    config:
+      signal: WorkerSeedComposed
+      inputs:
+        collection: $from(request).collection
+        n_results: $from(request).n_results
+        round: $from(round_count).output
+      # The worker searches the ingested corpus, so its where filter
+      # selects source corpus, and its where_document is a $contains
+      # every fixture document satisfies -- the single space keeps the
+      # exact-match parameter exercised (C7) without narrowing the
+      # canned run. The provenance fields are what the worker's write
+      # tags its finding with (I4).
+      # The content field is JSON inside a JSON string, so the
+      # substitutions inside it are raw ({{ collection }}, not
+      # {{ json collection }}): the json form emits its own quotes,
+      # which would land unescaped inside the outer string and break
+      # the document. The collection name is trusted request input.
+      # file words read their params under a parameters key, the shape
+      # an LLM tool call's Result carries.
+      template: |-
+        {"parameters": {"path": "worker-seed.json",
+         "content": "{\"collection\": \"{{ collection }}\", \"where\": {\"source\": \"corpus\"}, \"where_document\": {\"$contains\": \" \"}, \"n_results\": {{ n_results }}, \"source\": \"derived\", \"agent\": \"rlm-worker\", \"round\": {{ round }}}"}}
+
+  - name: write_worker_seed
+    type: builtin
+    init: file_write
     visibility: internal
     category: boundary
-    description: Run one rlm-worker against one intent through the child-agent boundary.
+    description: Write the shared worker seed file to the workspace.
+    problem: The dispatch word merges each intent with the shared fields, and a merge needs both sides on disk or on stdin; the shared side goes to disk once.
+    goals:
+      - Write the seed file at the path the previous compose named.
+    requirements:
+      input:
+        - path and content from the previous Result's output.
+      output:
+        - The write receipt.
+      errors:
+        - Filesystem failures emit ToolFailed or CommandError.
+    non_goals:
+      - Does not write per-intent files; the dispatch word owns those.
+    parameters: {type: object, properties: {}, additionalProperties: false}
+    emits: [ToolDone, ToolFailed, CommandError]
+    output:
+      description: The write receipt.
+      schema: {type: object}
+    side_effects:
+      - kind: filesystem_write
+        target: worker-seed.json
+        state: seed_written
+    reversibility: {classification: reversible}
+    undo: {strategy: file_snapshot_restore, description: Restore the prior file state from the receipt.}
+    errors:
+      - signal: ToolFailed
+        condition: The path is missing or the workspace is not writable.
+        state_after_failure: No seed file exists and no worker is dispatched.
+    relationships:
+      after: [compose_worker_seed]
+      before: [dispatch_worker]
+    config: {}
+
+  - name: dispatch_worker
+    type: exec
+    binary: sh
+    args:
+      - -ec
+      # One item, one worker. The intent arrives on stdin through the
+      # fan-out binding; the shared fields come from the seed file the
+      # machine just wrote; the merged request goes to disk because a
+      # child agent reads its --request from disk; then the worker runs
+      # to completion. The worker's finding goes to the blackboard, not
+      # to stdout -- nothing here returns content to the root (I1). The
+      # record id is a checksum of the intent, so the dispatch stays
+      # deterministic and model-free.
+      - |
+        intent="$(cat)"
+        id="finding-$(printf %s "$intent" | cksum | cut -d' ' -f1)"
+        jq -cn --arg content "$intent" --arg id "$id" --slurpfile seed worker-seed.json \
+          '$seed[0] + {content: $content, id: $id}' > worker-request.json
+        exec "${RLM_AGENT_BIN:-agent}" \
+          --profile "${RLM_APP_DIR:-.}/agents/rlm-worker/profile.yaml" \
+          --request worker-request.json
+    stdin_source: $from(intent).value
+    stdin_max_bytes: 4096
+    visibility: internal
+    category: boundary
+    description: Merge one intent with the shared seed, write the worker request, and run the worker.
     problem: |
-      The corpus is larger than one context window, so the read has to be
-      split. Splitting it across child runs rather than across turns of
-      one run is what keeps the parent's context flat: each worker holds
-      its own passages and this machine never sees them.
+      The corpus is larger than one context window, so the read has to
+      be split. Splitting it across child runs rather than across turns
+      of one run is what keeps the parent's context flat: each worker
+      holds its own passages and this machine never sees them. A child
+      agent reads its request from disk, so the per-item file has to be
+      written by the same word that dispatches over it -- the fan-out
+      body is one word per item.
     goals:
       - Dispatch the worker profile once per parsed intent.
       - Leave each worker's finding on the blackboard rather than returning it here.
     requirements:
       input:
-        - The intent from the for_each binding and the collection from the request.
+        - The intent from the for_each binding on stdin; the shared fields from worker-seed.json.
       output:
-        - Child completion signal; the finding itself is read back from the blackboard.
+        - The worker's exit mapped to ToolDone or ToolFailed; the finding itself stays on the blackboard.
       errors:
-        - A failed child is a handled item outcome so the remaining intents still run.
+        - A failed worker is a handled item outcome so the remaining intents still run.
     non_goals:
       - Does not read the child's findings into this machine's Result.
       - Does not retry a failed worker; the round loop is the retry.
-    parameters: {type: object, properties: {}, additionalProperties: false}
+      - Does not let the model author the collection, filters, provenance, or record id.
     emits: [ToolDone, ToolFailed, CommandError]
     output:
-      description: Child worker completion.
+      description: The worker's stdout, unused; the blackboard carries the result.
       schema: {type: string}
     side_effects:
       - kind: child_process
@@ -179,12 +424,8 @@ tools:
         condition: The worker exits unsuccessfully.
         state_after_failure: That intent has no finding on the blackboard; the others are unaffected.
     relationships:
-      after: [parse_plan]
+      after: [write_worker_seed]
       before: [compose_collect_query]
-    config:
-      profile: agents/rlm-worker/profile.yaml
-      request_from: $from(dispatch).intent
-      output_from: $from(parsed_plan).collection
 
   - name: compose_collect_query
     type: builtin
@@ -202,7 +443,7 @@ tools:
       - Carry the request's anchor term and result count into the query.
     requirements:
       input:
-        - The round from command state and the collection, anchor, and count from the request.
+        - The round from command state and the collection, anchor, and count from the captured request.
       output:
         - "One object shaped for the embed and query words: content, collection, where, where_document, n_results."
       errors:
@@ -229,33 +470,13 @@ tools:
     relationships:
       after: [dispatch_worker]
       before: [embed_collect]
-    # Two selector forms have been tried for the request fields and
-    # both resolve empty at runtime, so this word still renders blanks
-    # (#37):
-    #
-    #   $.task                     -- a compose word's inputs resolve
-    #                                 against command state, and the
-    #                                 --request payload is not there.
-    #   $from(seed).parameters.task -- the form coding-agent's planner
-    #                                 uses. That profile is seeded by a
-    #                                 REST endpoint through its
-    #                                 request-machine.yaml, and the
-    #                                 `seed` label appears to come from
-    #                                 that path rather than from the
-    #                                 CLI --request flag.
-    #
-    # The form below is kept because it is the closer of the two to a
-    # working precedent. What is still unknown is how a --request file
-    # reaches any word other than through a rest_client_invoke with
-    # body_source: previous_result, which is how the catalog
-    # memory-write block does it.
     config:
       signal: CollectQueryComposed
       inputs:
-        task: $from(seed).parameters.task
-        collection: $from(seed).parameters.collection
-        anchor: $from(seed).parameters.anchor
-        n_results: $from(seed).parameters.n_results
+        task: $from(request).task
+        collection: $from(request).collection
+        anchor: $from(request).anchor
+        n_results: $from(request).n_results
         round: $from(round_count).output
       template: |-
         {"content": {{ json task }},
@@ -455,7 +676,7 @@ tools:
       - Emit distinct signals for another round and for the last one.
     requirements:
       input:
-        - Resolves the latest round counter from command state.
+        - Resolves the latest round counter and the captured request's bound from command state.
       output:
         - Emits RoundsRemaining below the bound and RoundBoundReached otherwise.
       errors:
@@ -485,10 +706,10 @@ tools:
         state_after_failure: No comparison is made and the loop does not advance.
     relationships:
       after: [collect_findings]
-      before: [increment_round, reduce_findings]
+      before: [increment_round, compose_reduce_input]
     config:
       left: $from(round_count).output
-      right: $from(seed).parameters.round_bound
+      right: $from(request).round_bound
       op: lt
       operand_type: number
       satisfied: RoundsRemaining
@@ -516,7 +737,7 @@ tools:
         - An absent, malformed, or oversized input emits CommandError.
     non_goals:
       - Does not compare the count with the bound.
-    emits: [RoundAdvanced, CommandError]
+    emits: [ToolDone, ToolFailed, CommandError]
     output:
       description: The incremented round counter.
       schema:
@@ -536,4 +757,109 @@ tools:
         message_shape: "increment_round: resolve exec input: <error>"
     relationships:
       after: [check_round_bound]
-      before: [plan_intents]
+      before: [compose_plan_input]
+
+  - name: compose_reduce_input
+    type: builtin
+    init: compose
+    visibility: internal
+    category: response
+    description: Compose the reducer's input from the task and the collected handles.
+    problem: |
+      invoke_llm's user message is its previous Result's output. Without
+      this word the reducer's user message would be the round-bound
+      comparison object rather than the task and what the workers found.
+    goals:
+      - Render the task and the collected record ids and metadata for the reducer.
+    requirements:
+      input:
+        - The task from the captured request and the collected handles from this round.
+      output:
+        - Plain text the reducer reads as its user message.
+      errors:
+        - Compose failures emit CommandError.
+    non_goals:
+      - Does not include corpus content; the collected label carries ids and metadata only (I1).
+    parameters: {type: object, properties: {}, additionalProperties: false}
+    emits: [ReduceInputComposed, CommandError]
+    output:
+      description: The reducer's user message.
+      schema: {type: string}
+    side_effects: []
+    reversibility: {classification: reversible}
+    undo: {strategy: noop, description: Composing text changes no external state.}
+    relationships:
+      after: [check_round_bound]
+      before: [reduce_findings]
+    config:
+      signal: ReduceInputComposed
+      inputs:
+        task: $from(request).task
+        ids: $from(collected).ids
+        metadata: $from(collected).metadatas
+      template: |-
+        Task: {{ task }}
+
+        Collected findings (record ids and metadata):
+        ids: {{ json ids }}
+        metadata: {{ json metadata }}
+
+  - name: compose_final
+    type: builtin
+    init: compose
+    visibility: internal
+    category: response
+    description: Shape the reduced answer into the tagged Final record.
+    problem: |
+      The reduce reply is raw model text, and embed_memory selects
+      declared params from its previous Result -- content, id,
+      collection, and the provenance fields. The text has to be wrapped
+      into that shape, with every field except the content coming from
+      the trusted request.
+    goals:
+      - Wrap the answer as the record content.
+      - Attach the record id, collection, and provenance from the captured request.
+    requirements:
+      input:
+        - The answer as the previous Result; the id, collection, and agent from the captured request.
+      output:
+        - One JSON object shaped for the memory-write words.
+      errors:
+        - Compose or serialization failures emit CommandError.
+    non_goals:
+      - Does not let the model author the id, collection, tags, or round.
+    parameters: {type: object, properties: {}, additionalProperties: false}
+    emits: [FinalComposed, CommandError]
+    output:
+      description: The tagged Final record, shaped for embed_memory.
+      schema:
+        type: object
+        properties:
+          content: {type: string}
+          id: {type: string}
+          collection: {type: string}
+          source: {type: string}
+          agent: {type: string}
+          round: {type: integer}
+        required: [content, id, collection, source, agent, round]
+    side_effects: []
+    reversibility: {classification: reversible}
+    undo: {strategy: noop, description: Shaping model text changes no external state.}
+    relationships:
+      after: [reduce_findings]
+      before: [embed_memory]
+    config:
+      signal: FinalComposed
+      inputs:
+        content: $.
+        id: $from(request).id
+        collection: $from(request).collection
+        agent: $from(request).agent
+        round: $from(round_count).output
+      template: |-
+        {"content": {{ json content }},
+         "id": {{ json id }},
+         "collection": {{ json collection }},
+         "source": "final",
+         "agent": {{ json agent }},
+         "round": {{ round }}}

@@ -30,15 +30,16 @@ schema_version: 1
 # go_module/go_version name the *Go module* examples build against.
 # There is no module at the repository root -- the runtime is the nested
 # agent-core module, and nested modules carry prefixed tags. Nokia
-# publishes agent-core/* tags up to v0.20260803.0, so that is the newest
-# version any go.mod here can resolve. It is older than the repository
-# release above, and the gap is real rather than an oversight: no
-# agent-core tag exists at the newer commit.
+# publishes no agent-core tag at the release above, so the pin is the
+# pseudo-version the Go proxy mints for the nearest commit whose
+# agent-core tree is identical to the v0.20260814.4 tag's (verified:
+# no agent-core commits lie between them). The date stamp in it is the
+# proxy's, not a second release.
 runtime:
   module: github.com/Nokia-Bell-Labs/declarative-agents
   release: v0.20260814.4
   go_module: github.com/Nokia-Bell-Labs/declarative-agents/agent-core
-  go_version: v0.20260803.0
+  go_version: v0.20260803.1-0.20260815014700-f3e1f68d379c
 examples:
   # chapter: provisional. The book README carries no RLM chapter and
   # docs/ARCHITECTURE.yaml does not exist yet (#7), so the audit reports
@@ -48,7 +49,7 @@ examples:
   - id: large-context-swarm
     chapter: C-rlm
     kind: chapter-application
-    status: partial
+    status: implemented
     srd: docs/srd/srd-large-context-swarm.yaml
   # The blackboard blocks the swarm composes. release: is the pinned
   # declarative-agents release, which is the newest upstream tag the

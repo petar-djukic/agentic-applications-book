@@ -9,19 +9,21 @@ purpose: |-
 
   Every arrangement here exists to keep corpus text away from this
   machine. The root never queries the corpus; it queries for entries
-  tagged source: derived, which are the workers' findings and are
-  already short. It never selects the documents field of a query
-  response. What reaches the reducing model is a set of record ids and
-  the findings the workers wrote, not the passages those findings came
-  from. That is the claim the rebuild exists to test, and it is a
-  property of the input_mapping in declarations.yaml rather than of
+  tagged source: derived, which are the workers' findings. It never
+  selects the documents field of a query response. What reaches the
+  reducing model is record ids and metadata, not the passages the
+  workers read. That is the claim the rebuild exists to test, and it is
+  a property of the input_mapping in declarations.yaml rather than of
   anything the model is asked to do.
 
-  The caller supplies the task through the --request file. A request
-  holding {"task", "collection", "anchor", "n_results", "round_bound",
-  "id", "agent"} makes each field addressable. The filters and the round
-  bound arrive as trusted request input, so neither is authored by a
-  model.
+  The caller supplies the task through the --request file. Per the
+  runtime contract, the file's bytes become the initial Seed
+  Result.Output, so the machine's first word -- and only its first word
+  -- can select the request fields with $.field selectors.
+  capture_request republishes them under the label `request`, which is
+  what makes them addressable to every later word without a
+  carry_forward chain. The filters and the round bound arrive as
+  trusted request input, so neither is authored by a model.
 realizes:
   # srd-large-context-swarm, examples/docs/srd/
   - C1   # this file set and this state shape
@@ -45,22 +47,30 @@ initial_state: Idle
 summary_signal: MemoryAdded
 budget:
   command_timeout: 15m
-  # Fifteen words per round against a bound the request declares. This
-  # ceiling covers three rounds plus the fixed prologue and epilogue. A
-  # run that exceeds it fails rather than looping unbounded, which is
-  # the second half of C5.
-  max_iterations: 60
+  # Roughly twenty words per round against a bound the request declares.
+  # This ceiling covers three rounds plus the fixed prologue and
+  # epilogue. A run that exceeds it fails rather than looping unbounded,
+  # which is the second half of C5.
+  max_iterations: 80
 states:
   - name: Idle
     meaning: Initial state before the task arrives.
+  - name: CapturingRequest
+    meaning: The request seed is being republished as an addressable command-state value.
   - name: SeedingRound
     meaning: The round counter is being published as an addressable command-state value.
+  - name: ComposingPlanInput
+    meaning: The task and any prior-round findings are being composed into the planner's input.
   - name: Planning
     meaning: The task is being decomposed into sub-intents.
   - name: CapturingPlan
     meaning: The raw plan reply is being shaped into addressable JSON.
   - name: ParsingPlan
     meaning: The captured reply is being parsed against the intents schema.
+  - name: ComposingWorkerSeed
+    meaning: The fields every worker request shares are being composed for the seed file.
+  - name: WritingWorkerSeed
+    meaning: The shared worker fields are being written to the workspace.
   - name: Delegating
     meaning: One worker is being dispatched per parsed intent, sequentially.
   - name: Delegated
@@ -77,10 +87,14 @@ states:
     meaning: The round counter is being compared with the declared bound.
   - name: AdvancingRound
     meaning: The round counter is being incremented for another pass.
+  - name: ComposingReduceInput
+    meaning: The task and the collected handles are being composed into the reducer's input.
   - name: Reducing
     meaning: The collected findings are being reduced into one answer.
+  - name: CapturingFinal
+    meaning: The reduced answer is being shaped into the tagged Final record.
   - name: EmbeddingFinal
-    meaning: The reduced answer is being embedded for storage.
+    meaning: The Final answer is being embedded for storage.
   - name: ResolvingFinalCollection
     meaning: The same collection is being create-or-got and the Final record carried forward.
   - name: Writing
@@ -97,8 +111,12 @@ terminal_states:
 signals:
   - name: Seed
     trigger: Loop initialization with the request task.
+  - name: RequestCaptured
+    trigger: The request fields were republished to command state.
   - name: RoundSeeded
     trigger: The round counter was published to command state.
+  - name: PlanInputComposed
+    trigger: The planner's input was composed from the task and prior findings.
   - name: LLMResponded
     trigger: The model returned text.
   - name: PlanCaptured
@@ -107,14 +125,16 @@ signals:
     trigger: The captured reply validated against the intents schema.
   - name: ParseFailed
     trigger: The captured reply was malformed or did not match the schema.
-  # ToolDone and ToolFailed are per-item outcomes of the fan-out, not
-  # transitions of this machine. They appear here because continue_on
-  # names them and the machine validator requires every signal it
-  # mentions to be declared.
+  - name: WorkerSeedComposed
+    trigger: The shared worker fields were composed for the seed file.
+  # ToolDone and ToolFailed are what file and exec words actually emit:
+  # a runtime word's exit code maps to ToolDone or ToolFailed, never to
+  # a declared custom signal. They also serve as the fan-out's per-item
+  # outcomes.
   - name: ToolDone
-    trigger: One dispatched worker finished successfully.
+    trigger: A file, exec, or dispatched worker word finished successfully.
   - name: ToolFailed
-    trigger: One dispatched worker exited unsuccessfully; the remaining intents still run.
+    trigger: A file, exec, or dispatched worker word exited unsuccessfully.
   - name: WorkersCollected
     trigger: Every dispatched worker reached a terminal state and the join closed.
   - name: CollectQueryComposed
@@ -129,8 +149,10 @@ signals:
     trigger: The round counter is below the declared bound.
   - name: RoundBoundReached
     trigger: The round counter reached the declared bound; no further intents are planned.
-  - name: RoundAdvanced
-    trigger: The round counter was incremented.
+  - name: ReduceInputComposed
+    trigger: The reducer's input was composed from the task and the collected handles.
+  - name: FinalComposed
+    trigger: The reduced answer was shaped into the tagged Final record.
   - name: MemoryEmbedded
     trigger: Ollama returned an embedding vector for the Final answer.
   - name: MemoryAdded
@@ -138,21 +160,39 @@ signals:
   - name: CommandError
     trigger: Runtime, REST, or model boundary infrastructure failed.
 transitions:
-  # The request payload needs no capturing word. The runtime labels the
-  # seeding event `seed`, so $from(seed).parameters.<field> reaches the
-  # request from any word at any point -- no threading, no carry_forward
-  # chain. compose_collect_query and check_round_bound use it directly.
+  # capture_request must be the first action: only the first word's
+  # previous Result is the request seed (runtime contract, --request).
   - state: Idle
     signal: Seed
+    next: CapturingRequest
+    action: capture_request
+    label: request
+
+  - state: CapturingRequest
+    signal: RequestCaptured
     next: SeedingRound
     action: seed_round
     label: round_count
+  - state: CapturingRequest
+    signal: CommandError
+    next: Failed
 
+  # invoke_llm's user message is the previous Result's output, so the
+  # planner must be preceded by a compose that renders the task -- not
+  # by seed_round, whose output is the round counter.
   - state: SeedingRound
     signal: RoundSeeded
+    next: ComposingPlanInput
+    action: compose_plan_input
+  - state: SeedingRound
+    signal: CommandError
+    next: Failed
+
+  - state: ComposingPlanInput
+    signal: PlanInputComposed
     next: Planning
     action: plan_intents
-  - state: SeedingRound
+  - state: ComposingPlanInput
     signal: CommandError
     next: Failed
 
@@ -185,12 +225,37 @@ transitions:
     signal: CommandError
     next: Failed
 
-  # C2: one worker per parsed intent. Sequential because the canned demo
-  # cannot exercise concurrency and parallel dispatch is a scaling
-  # question, not a mechanism question. collect_all so one worker's
-  # failure leaves the others' findings on the blackboard.
   - state: ParsingPlan
     signal: PlanParsed
+    next: ComposingWorkerSeed
+    action: compose_worker_seed
+  - state: ComposingWorkerSeed
+    signal: CommandError
+    next: Failed
+
+  # file_write takes its path and content from the previous Result's
+  # output, which is exactly what compose_worker_seed renders.
+  - state: ComposingWorkerSeed
+    signal: WorkerSeedComposed
+    next: WritingWorkerSeed
+    action: write_worker_seed
+  - state: WritingWorkerSeed
+    signal: ToolFailed
+    next: Failed
+  - state: WritingWorkerSeed
+    signal: CommandError
+    next: Failed
+
+  # C2: one worker per parsed intent. The body word is an exec that
+  # merges the shared seed file with the one intent bound as
+  # $from(intent).value, writes the worker request file, and runs the
+  # worker -- because a child agent reads its request from disk, and
+  # the per-item file has to be written by the same word that dispatches
+  # over it. Sequential because the canned demo cannot exercise
+  # concurrency; collect_all so one worker's failure leaves the others'
+  # findings on the blackboard.
+  - state: WritingWorkerSeed
+    signal: ToolDone
     next: Delegating
     action: dispatch_worker
     label: dispatch
@@ -213,7 +278,7 @@ transitions:
   # makes a failed worker a handled item outcome, so the fan-out never
   # raises out of the loop -- the join closes on WorkersCollected
   # whatever the items did. The error edge for the whole fan-out is the
-  # one on ParsingPlan, which is the state that initiates it.
+  # one on WritingWorkerSeed, which initiates it.
   - state: Delegated
     signal: WorkersCollected
     next: ComposingCollectQuery
@@ -259,28 +324,51 @@ transitions:
     label: round_count
   - state: CheckingRound
     signal: RoundBoundReached
-    next: Reducing
-    action: reduce_findings
+    next: ComposingReduceInput
+    action: compose_reduce_input
   - state: CheckingRound
     signal: CommandError
     next: Failed
 
   # The loop edge. Derived entries from round N seed the intents of
   # round N+1 (C4). The bound is what stops it, and the iteration budget
-  # is what stops the bound being wrong.
+  # is what stops the bound being wrong. increment_round is an exec word
+  # and exec words emit ToolDone on success.
   - state: AdvancingRound
-    signal: RoundAdvanced
-    next: Planning
-    action: plan_intents
+    signal: ToolDone
+    next: ComposingPlanInput
+    action: compose_plan_input
+  - state: AdvancingRound
+    signal: ToolFailed
+    next: Failed
   - state: AdvancingRound
     signal: CommandError
     next: Failed
 
+  - state: ComposingReduceInput
+    signal: ReduceInputComposed
+    next: Reducing
+    action: reduce_findings
+  - state: ComposingReduceInput
+    signal: CommandError
+    next: Failed
+
+  # The reduce reply is raw model text, and the write path's first REST
+  # word selects declared params from its previous Result -- so the text
+  # must first be shaped into the tagged record object.
   - state: Reducing
     signal: LLMResponded
+    next: CapturingFinal
+    action: compose_final
+  - state: Reducing
+    signal: CommandError
+    next: Failed
+
+  - state: CapturingFinal
+    signal: FinalComposed
     next: EmbeddingFinal
     action: embed_memory
-  - state: Reducing
+  - state: CapturingFinal
     signal: CommandError
     next: Failed
 

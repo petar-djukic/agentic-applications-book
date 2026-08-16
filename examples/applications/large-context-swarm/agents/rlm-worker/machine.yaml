@@ -15,12 +15,12 @@ purpose: |-
   the root's context window.
 
   The caller supplies the intent through the --request file, whose
-  contents become the seed Result the first word selects from. A request
-  holding {"content", "collection", "where", "where_document",
-  "n_results", "id", "source", "agent", "round"} makes each field
-  addressable. The filters arrive as trusted request input rather than
-  as model-authored text, and the model is asked for one thing only:
-  the finding.
+  bytes become the initial Seed Result.Output (runtime contract). The
+  machine's first word republishes the fields under the label `request`
+  so the write path can reach them after the model call; the query path
+  reads them as its previous Result. The filters arrive as trusted
+  request input rather than as model-authored text, and the model is
+  asked for one thing only: the finding.
 realizes:
   # srd-large-context-swarm, examples/docs/srd/
   - C6   # this file set and this state shape
@@ -41,13 +41,18 @@ invariants:
 initial_state: Idle
 summary_signal: MemoryAdded
 budget:
-  command_timeout: 5m
+  # Strictly above compose_finding's max_time of 300s: the runtime's
+  # timeout-closure validation requires every operation duration below
+  # the machine's command_timeout.
+  command_timeout: 6m
   # Seven words, no loop. The ceiling leaves room for one retry of a
   # transient boundary failure without permitting a second pass.
   max_iterations: 12
 states:
   - name: Idle
     meaning: Initial state before the intent arrives.
+  - name: CapturingRequest
+    meaning: The request seed is being republished as an addressable command-state value.
   - name: EmbeddingQuery
     meaning: The intent text is being embedded at Ollama for the vector query.
   - name: ResolvingQueryCollection
@@ -56,6 +61,8 @@ states:
     meaning: The filtered query is running -- vector similarity, $contains, and the metadata filter together.
   - name: Reading
     meaning: The returned chunks are being read into one finding.
+  - name: ComposingRecord
+    meaning: The finding is being shaped into the tagged record for the write path.
   - name: EmbeddingFinding
     meaning: The finding is being embedded at Ollama for storage.
   - name: ResolvingWriteCollection
@@ -74,6 +81,8 @@ terminal_states:
 signals:
   - name: Seed
     trigger: Loop initialization with the request intent.
+  - name: RequestCaptured
+    trigger: The request fields were republished to command state.
   - name: QueryEmbedded
     trigger: Ollama returned an embedding vector for the intent.
   - name: CollectionReady
@@ -82,6 +91,8 @@ signals:
     trigger: Chroma returned the filtered result set.
   - name: LLMResponded
     trigger: The model returned the finding text.
+  - name: RecordComposed
+    trigger: The finding was shaped into the tagged record.
   - name: MemoryEmbedded
     trigger: Ollama returned an embedding vector for the finding.
   - name: MemoryAdded
@@ -89,10 +100,23 @@ signals:
   - name: CommandError
     trigger: Runtime, REST, or model boundary infrastructure failed.
 transitions:
+  # capture_request must be the first action: only the first word's
+  # previous Result is the request seed (runtime contract, --request).
+  # Its output repeats every seed field, so embed_intent still reads its
+  # params from the previous Result unchanged.
   - state: Idle
     signal: Seed
+    next: CapturingRequest
+    action: capture_request
+    label: request
+
+  - state: CapturingRequest
+    signal: RequestCaptured
     next: EmbeddingQuery
     action: embed_intent
+  - state: CapturingRequest
+    signal: CommandError
+    next: Failed
 
   - state: EmbeddingQuery
     signal: QueryEmbedded
@@ -119,11 +143,22 @@ transitions:
     next: Failed
 
   # One edge out of Reading, so one intent yields one finding (C8).
+  # The finding is raw model text and embed_memory selects declared
+  # params from its previous Result, so a compose shapes the record
+  # first, with every field except the content from the trusted request.
   - state: Reading
     signal: LLMResponded
+    next: ComposingRecord
+    action: compose_record
+  - state: Reading
+    signal: CommandError
+    next: Failed
+
+  - state: ComposingRecord
+    signal: RecordComposed
     next: EmbeddingFinding
     action: embed_memory
-  - state: Reading
+  - state: ComposingRecord
     signal: CommandError
     next: Failed
 

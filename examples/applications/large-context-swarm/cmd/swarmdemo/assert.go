@@ -129,32 +129,69 @@ func assertProvenanceTags(records []record) result {
 	return result{"A4", true, fmt.Sprintf("all %d writes tagged", total)}
 }
 
+// workerChatMarker identifies a worker's model call by its system
+// prompt. The worker is the half of the swarm allowed to hold corpus
+// text, and its chat requests legitimately carry the passages it read.
+// Everything else on the wire is held to the no-corpus-text rule.
+const workerChatMarker = "one worker in a swarm"
+
+// ingestMarker identifies the harness's own corpus ingest, which by
+// definition carries document text.
+const ingestMarker = `"source":"corpus"`
+
 // A5. No fixture document text in any request the root originated.
 //
 // This is invariant I1 and the assertion the whole rebuild rests on. A
 // run can satisfy every other check here and still be ordinary
 // retrieval augmentation; this is what tells them apart.
 //
-// The test is deliberately blunt: no distinctive sentence from any
-// corpus document may appear in any recorded request body. Worker
-// requests never carry document text either -- a worker reads passages
-// in its response and writes only its own finding -- so scanning
-// everything costs nothing and removes the need to attribute each
-// request to a process.
+// Two request classes are exempt, because they are supposed to carry
+// document text: the workers' model calls (a worker reads passages;
+// that is its job) and the harness's own ingest. Everything else --
+// the root's plan and reduce calls, every query body, every embed, and
+// every non-ingest write -- is scanned for every corpus document's most
+// distinctive sentence. The exemption is guarded: a run with fewer than
+// two worker-marked model calls fails, because then the partition is
+// stale and the scan is vacuous.
 func assertNoCorpusTextAtRoot(records []record, docs corpus) result {
+	workerChats := 0
+	var scanned []record
+	for _, r := range records {
+		body := string(r.Body)
+		if strings.HasSuffix(r.Path, "/chat") && strings.Contains(body, workerChatMarker) {
+			workerChats++
+			continue
+		}
+		if strings.HasSuffix(r.Path, "/add") && strings.Contains(compactJSON(body), ingestMarker) {
+			continue
+		}
+		scanned = append(scanned, r)
+	}
+	if workerChats < 2 {
+		return result{"A5", false, fmt.Sprintf(
+			"only %d worker-marked model calls; the exemption marker looks stale and the scan would be vacuous", workerChats)}
+	}
 	for _, doc := range docs.Documents {
 		probe := distinctiveSentence(doc.Text)
 		if probe == "" {
 			continue
 		}
-		if bodyContains(records, probe) {
+		if bodyContains(scanned, probe) {
 			return result{"A5", false, fmt.Sprintf(
-				"corpus text from %s reached a request: %q", doc.ID, truncate(probe, 60))}
+				"corpus text from %s reached a root-side request: %q", doc.ID, truncate(probe, 60))}
 		}
 	}
 	return result{"A5", true, fmt.Sprintf(
-		"no sentence from any of %d corpus documents appears in %d recorded requests",
-		len(docs.Documents), len(records))}
+		"no corpus sentence in %d root-side requests (%d worker reads exempt)",
+		len(scanned), workerChats)}
+}
+
+// compactJSON strips spaces so marker matching is insensitive to
+// encoder whitespace.
+func compactJSON(s string) string {
+	s = strings.ReplaceAll(s, " ", "")
+	s = strings.ReplaceAll(s, "\n", "")
+	return s
 }
 
 // distinctiveSentence returns the document's longest sentence, which is

@@ -12,8 +12,10 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -97,7 +99,16 @@ func run() error {
 		return err
 	}
 
+	// The demo owns ingest and teardown, per the SRD's D1: the corpus
+	// goes in before the root runs, and the collection is deleted after.
+	// Both requests land in the stub log, which is what A1 checks.
+	if err := ingestCorpus(expected.Request.Collection, docs); err != nil {
+		return err
+	}
 	runErr := runRoot(binary, requestPath)
+	if err := teardownCollection(expected.Request.Collection); err != nil {
+		return err
+	}
 
 	records := append(chroma.requests(), ollama.requests()...)
 	if missing := append(chroma.unmatched(), ollama.unmatched()...); len(missing) > 0 {
@@ -107,6 +118,53 @@ func run() error {
 		return fmt.Errorf("root run: %w", runErr)
 	}
 	return assertAll(records, expected, docs)
+}
+
+const chromaBase = "http://" + chromaAddr + "/api/v2/tenants/default_tenant/databases/default_database"
+
+// ingestCorpus creates the per-task collection and adds every fixture
+// document, tagged source corpus so the workers' where filter selects
+// them and the derived-only collect does not (srd-knowledge-manager P3).
+func ingestCorpus(collection string, docs corpus) error {
+	if _, err := postJSON(chromaBase+"/collections",
+		map[string]any{"name": collection, "get_or_create": true}); err != nil {
+		return fmt.Errorf("ingest: create collection: %w", err)
+	}
+	for _, doc := range docs.Documents {
+		body := map[string]any{
+			"ids":        []string{doc.ID},
+			"documents":  []string{doc.Text},
+			"embeddings": [][]float64{{0.1, 0.2, 0.3}},
+			"metadatas":  []map[string]any{{"source": "corpus", "agent": "ingest", "round": 0}},
+		}
+		if _, err := postJSON(chromaBase+"/collections/"+collection+"/add", body); err != nil {
+			return fmt.Errorf("ingest %s: %w", doc.ID, err)
+		}
+	}
+	return nil
+}
+
+func teardownCollection(collection string) error {
+	if _, err := postJSON(chromaBase+"/collections/"+collection+"/delete", map[string]any{}); err != nil {
+		return fmt.Errorf("teardown: %w", err)
+	}
+	return nil
+}
+
+func postJSON(url string, body any) (*http.Response, error) {
+	payload, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := http.Post(url, "application/json", bytes.NewReader(payload))
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 400 {
+		return resp, fmt.Errorf("%s returned %d", url, resp.StatusCode)
+	}
+	return resp, nil
 }
 
 // buildRuntime builds the pinned agent binary into a temporary
@@ -147,10 +205,29 @@ func writeRequest(expected expectations) (string, error) {
 }
 
 func runRoot(binary, requestPath string) error {
+	appDir, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	// The root runs in its own scratch workspace: worker-seed.json and
+	// worker-request.json land there rather than in the repository tree.
+	// The dispatch script finds the runtime and the worker profile
+	// through the two environment references, because an exec word's
+	// argv is static config and its working directory is the workspace.
+	workDir, err := os.MkdirTemp("", "swarmdemo-work-")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(workDir)
 	command := exec.Command(binary,
-		"--profile", "agents/rlm-root/profile.yaml",
+		"--profile", filepath.Join(appDir, "agents/rlm-root/profile.yaml"),
 		"--request", requestPath,
-		"--child-agent-binary", binary,
+		"--directory", workDir,
+	)
+	command.Dir = workDir
+	command.Env = append(os.Environ(),
+		"RLM_AGENT_BIN="+binary,
+		"RLM_APP_DIR="+appDir,
 	)
 	command.Stdout = os.Stdout
 	command.Stderr = os.Stderr

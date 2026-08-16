@@ -83,7 +83,7 @@ routes:
           documents:
             - - "Station Kelvin recorded a salinity anomaly of 1.8 practical salinity units on the night of 11 March, the largest single-night excursion in that station's record. The observation log does not name the instrument that took the reading. [RLM-DEMO-1]"
               - "CTD-114 was installed at 35 metres at Station Kelvin before the March rotation and was the only conductivity sensor on that mooring for the month. The other instrument in place, FLNTU-08, measures turbidity and not conductivity. [RLM-DEMO-1]"
-              - "CTD-114 was calibrated on 12 January by Renata Oyelaran against the reference cell in the shore laboratory. The conductivity residual after adjustment was within tolerance and the entry was signed off the same day. [RLM-DEMO-1]"
+              - "Renata Oyelaran performed the calibration of CTD-114 on 12 January, using the shore laboratory's reference cell; the residual came in within tolerance and she signed the entry off the same day. [RLM-DEMO-1]"
           metadatas:
             - - {source: derived, agent: rlm-worker, round: 1}
               - {source: derived, agent: rlm-worker, round: 1}

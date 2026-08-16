@@ -77,7 +77,7 @@ routes:
           message:
             role: assistant
             content: |
-              CTD-114 was calibrated on 12 January by Renata Oyelaran against the reference cell in the shore laboratory. The conductivity residual after adjustment was within tolerance and the entry was signed off the same day. [RLM-DEMO-1]
+              Renata Oyelaran performed the calibration of CTD-114 on 12 January, using the shore laboratory's reference cell; the residual came in within tolerance and she signed the entry off the same day. [RLM-DEMO-1]
           eval_count: 51
           prompt_eval_count: 298
 

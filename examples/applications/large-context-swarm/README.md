@@ -11,9 +11,11 @@ provenance-tagged finding back, and the root reduces those findings into
 a `Final` entry. Only handles and constant-size metadata cross the
 root's boundary.
 
-**Status: partial.** `mage -d examples demo` loads both profiles under
-the pinned runtime and exits non-zero if either fails to validate. The
-blackboard loop itself does not run yet ([#36](https://github.com/petar-djukic/agentic-applications-book/issues/36)). The contract this module
+**Status: implemented.** `mage -d examples demo` validates both
+profiles under the pinned runtime, then runs the blackboard loop end to
+end against loopback stubs and asserts the six D3 properties against
+the request log. The loop step needs ports 8000 and 11434 free
+([#38](https://github.com/petar-djukic/agentic-applications-book/issues/38)). The contract this module
 must satisfy is
 [`docs/srd/srd-large-context-swarm.yaml`](../../docs/srd/srd-large-context-swarm.yaml);
 the work is tracked under
@@ -46,10 +48,6 @@ spans three of them and sits in none, and the canned Chroma and Ollama
 response scripts that make the run reproducible.
 `testdata/expected.yaml` states what the demo asserts and, where a
 string match cannot settle a claim, says so.
-
-| Arriving in | Content |
-|---|---|
-| [#36](https://github.com/petar-djukic/agentic-applications-book/issues/36) | Loopback stubs replaying the fixtures, the loop run, and the six assertions |
 
 Deployment surface — Helm, kind, lifecycle-manager actors, Job workers —
 stays upstream in declarative-agents, per non-goal N3 in

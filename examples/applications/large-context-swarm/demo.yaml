@@ -4,14 +4,16 @@
 # The canned demo. Every step runs offline against the module cache and
 # needs no credentials, per the ARCHITECTURE canned-demos constraint.
 #
-# What runs today is the runtime's own preflight against both profiles:
-# --validate-config loads the profile, the machine, and the REST
-# definitions and exits non-zero on any error. That is a real check and
-# it is not a small one -- it caught two defects in these profiles that
-# structural cross-checking had missed -- but it is a check that the
-# machines load, not that they run. The blackboard loop itself, driven
-# against loopback stubs replaying testdata/responses/, is #36. The
-# manifest keeps this example at `partial` until those assertions exist.
+# Three steps. The two validate steps run the runtime's own preflight
+# against each profile. The third runs the blackboard loop end to end
+# against loopback stubs replaying testdata/responses/, and asserts the
+# six properties of srd-large-context-swarm D3 against the stubs'
+# request log -- exiting non-zero if any fails.
+#
+# The loop step binds 127.0.0.1:8000 and 127.0.0.1:11434, the addresses
+# the copied corpus-rest.yaml hardcodes. A real Ollama or Chroma on
+# either port fails the bind with a message naming it (#38): stop them
+# before running the demo.
 steps:
   - name: validate rlm-worker
     argv:
@@ -29,3 +31,8 @@ steps:
       - --validate-config
       - --profile
       - agents/rlm-root/profile.yaml
+  - name: run the blackboard loop and assert
+    argv:
+      - go
+      - run
+      - ./cmd/swarmdemo

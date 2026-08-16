@@ -144,19 +144,22 @@ testdata:
       the module, not a convenience of the test.
 
 evidence:
-  status: partial
+  status: implemented
   satisfied: |
-    Both profiles load under the pinned runtime. `mage -d examples demo`
-    runs `agent --validate-config` against each, which parses the
-    profile, the machine, and the REST definitions and exits non-zero on
-    any error. It caught two defects that structural cross-checking had
-    missed: an unquoted description containing a colon, which YAML read
-    as a map where a string was required, and two `continue_on` signals
-    the fan-out named without declaring.
-  outstanding: |
-    D1 through D4 below. Nothing yet runs the loop, so no assertion in
-    D3 has been made against a real run -- including A5, the handle
-    discipline check the rebuild's claim rests on. Tracked in #36.
+    D1 through D4. `mage -d examples demo` validates both profiles under
+    the pinned runtime, then runs the blackboard loop end to end against
+    loopback stubs replaying testdata/responses/ -- root plans, three
+    workers search and write, the root collects by metadata, reduces,
+    and writes the Final entry -- and asserts every D3 property against
+    the stubs' request log, exiting non-zero on any failure. The
+    evidence command is `go run ./cmd/swarmdemo` from the application
+    directory; the demo needs ports 8000 and 11434 free (#38).
+  caveat: |
+    The run is canned (N2): model output and query results replay
+    fixtures, so the assertions prove the mechanism's wiring and its
+    handle discipline, not answer quality on a live corpus. A5 is
+    asserted against real requests from a real runtime, which is the
+    part that cannot be proven by inspection.
 demo:
   - id: D1
     name: full-loop

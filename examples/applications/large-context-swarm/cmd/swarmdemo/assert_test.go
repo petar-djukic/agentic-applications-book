@@ -39,6 +39,9 @@ func goodLog(finalAnswer string) []record {
 		log = append(log, goodQuery())
 	}
 	log = append(log,
+		workerChat("reading the observations cluster"),
+		workerChat("reading the deployments cluster"),
+		workerChat("reading the calibration ledger"),
 		goodAdd("Station Kelvin recorded a salinity anomaly. [RLM-DEMO-1]"),
 		goodAdd("CTD-114 was the only conductivity sensor. [RLM-DEMO-1]"),
 		goodAdd("Renata Oyelaran calibrated it. [RLM-DEMO-1]"),
@@ -114,6 +117,11 @@ func TestA4FailsOnAnUntaggedWrite(t *testing.T) {
 // The assertion the rebuild rests on. A run that leaks one corpus
 // sentence into any request has stopped being the mechanism the chapter
 // describes, even though every other assertion still passes.
+func workerChat(body string) record {
+	return record{Method: "POST", Path: "/api/chat",
+		Body: []byte(`{"messages":[{"role":"system","content":"You are ` + workerChatMarker + `"},{"content":"` + body + `"}]}`)}
+}
+
 func TestA5FailsWhenCorpusTextLeaks(t *testing.T) {
 	expected, docs := testFixtures(t)
 	leaked := distinctiveSentence(docs.Documents[0].Text)
@@ -121,15 +129,45 @@ func TestA5FailsWhenCorpusTextLeaks(t *testing.T) {
 		t.Fatal("the first corpus document has no sentence long enough to probe with")
 	}
 	log := append(goodLog(fullAnswer(expected)),
+		workerChat("reading passages"), workerChat("reading more"),
 		record{Method: "POST", Path: "/api/chat", Body: []byte(`{"messages":[{"content":"` + leaked + `"}]}`)})
 
 	if r := assertNoCorpusTextAtRoot(log, docs); r.passed {
-		t.Fatal("corpus text in a request must fail A5")
+		t.Fatal("corpus text in a root-side request must fail A5")
 	}
 	// And the point of having it: everything else still passes, so A5
 	// is the only thing standing between this run and a false verdict.
 	if r := assertFinalAnswer(log, expected); !r.passed {
 		t.Fatal("A6 should still pass on the leaking run, which is why A5 matters")
+	}
+}
+
+// The worker is allowed to hold corpus text; its marked model calls are
+// exempt from the scan. The same passage in a worker chat and a clean
+// root side must pass.
+func TestA5ExemptsWorkerReads(t *testing.T) {
+	expected, docs := testFixtures(t)
+	passage := distinctiveSentence(docs.Documents[0].Text)
+	log := append(goodLog(fullAnswer(expected)),
+		workerChat(passage), workerChat(passage))
+	if r := assertNoCorpusTextAtRoot(log, docs); !r.passed {
+		t.Fatalf("a worker reading passages must not fail A5: %s", r.detail)
+	}
+}
+
+// The exemption is guarded: with no worker-marked calls the partition
+// is stale and the scan proves nothing, so A5 fails rather than
+// passing vacuously.
+func TestA5FailsWithoutWorkerMarkedCalls(t *testing.T) {
+	expected, docs := testFixtures(t)
+	var log []record
+	for _, r := range goodLog(fullAnswer(expected)) {
+		if !strings.Contains(string(r.Body), workerChatMarker) {
+			log = append(log, r)
+		}
+	}
+	if r := assertNoCorpusTextAtRoot(log, docs); r.passed {
+		t.Fatal("a log with no worker-marked model calls must fail A5")
 	}
 }
 
