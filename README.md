@@ -84,8 +84,17 @@ template.
 ```bash
 mage all      # figures + PDF into generated-files/
 mage outline  # the outline PDF from docs/srd/, same directory
+mage critic all  # review drafted chapters against the constitutions and SRDs
 mage clean    # remove generated artifacts
 ```
+
+`mage critic <chapter-id|all>` runs deterministic form checks (retest box,
+banned words, excerpt length, create pointer, takeaway, verdict) on
+every drafted chapter, or on one when an id is given. With
+`ANTHROPIC_API_KEY` set it adds an LLM critique of the judgment-call
+rules; without the key that layer is skipped with a notice, so a
+keyless CI still gets the form checks. It exits non-zero on a blocking
+finding and never edits a chapter.
 
 The book's runnable artifacts live under [examples/](examples/): one
 declarative application per chapter rebuild, plus catalog profiles

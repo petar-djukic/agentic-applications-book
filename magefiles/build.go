@@ -131,6 +131,19 @@ func Outline() error {
 	return nil
 }
 
+// Critic reviews drafted chapters against the constitutions and their
+// SRDs: deterministic form checks always, plus an LLM critique when
+// ANTHROPIC_API_KEY is set (a keyless run skips it with a notice). Pass
+// a chapter id to review one chapter, or "all" to review every drafted
+// chapter. Exits non-zero on a blocking finding; never edits.
+func Critic(chapter string) error {
+	args := []string{"-C", "cmd/critic", "run", ".", "../.."}
+	if chapter != "all" {
+		args = append(args, chapter)
+	}
+	return sh.RunV("go", args...)
+}
+
 // Clean removes generated PNGs and PDFs.
 func Clean() error {
 	pngs, _ := filepath.Glob(filepath.Join(figuresDir, "*.png"))
