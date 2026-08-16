@@ -15,11 +15,9 @@ paper:
   title: Recursive Language Models
   arxiv: 2512.24601
 realizes:
-  # Provisional. The book's docs/srd/ does not exist yet (#10) and the
-  # book README carries no RLM chapter, so this id resolves to nothing
-  # and the audit reports it pending. It becomes real when #7 assigns
-  # the chapter id and #10 lands the chapter SRD.
-  - srd-rlm.1
+  # Enforced by the examples audit: this id resolves into the book's
+  # docs/srd/ (srd-c-rlm-recursive-lms.yaml).
+  - srd-c-rlm
 
 contains:
   - id: C1

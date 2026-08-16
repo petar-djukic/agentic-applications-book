@@ -1,0 +1,27 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+#
+# Placeholder per the framework README: the Create-tier gate (P-4)
+# blocks drafting until the mechanism lands. What is already known is
+# captured so unblocking is a fill-in, not a restart.
+meta:
+  id: srd-c24
+  chapter: C24
+  title: "The Paper My State Machine Refused"
+  file: 24-tree-of-thoughts.md
+  series_piece: 15
+status: blocked
+blocked_on:
+  mechanism: "the refusal itself: the chapter documents what was tried against the substrate and where it stops"
+  state: "not landed; one of the two largest Create pieces"
+  authority: docs/road-map.yaml
+paper:
+  - title: "Tree of Thoughts (2305.10601)"
+    authors_year: "Yao, Yu, et al. (2023). Tree of Thoughts: Deliberate Problem Solving with Large Language Models"
+claim_under_test: >
+  Captured at unblocking, from the chapter stub and the landed
+  mechanism; the stub's claim stands until then.
+constitutions: [P-4, V-M1, A-1]
+acceptance:
+  - the placeholder is replaced by a full SRD when the road-map's
+    create_gate.state reads landed

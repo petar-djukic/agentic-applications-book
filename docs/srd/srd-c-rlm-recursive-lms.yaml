@@ -1,0 +1,45 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+#
+# Placeholder with a difference: the mechanism landed before the chapter
+# (GH-20; the usual Create order inverted), so nothing blocks drafting.
+# The example SRD's realizes: list binds to this id, enforced by the
+# examples audit.
+meta:
+  id: srd-c-rlm
+  chapter: C-rlm
+  title: "The Context Window Is an Environment"
+  file: "none -- chapter file created when drafting starts (road-map follow_ons)"
+  series_piece: 14
+status: ready-to-draft
+paper:
+  - title: "Recursive Language Models"
+    authors_year: "(2025)"
+    arxiv: "2512.24601"
+claim_under_test: >
+  The corpus never enters any single context window: a root agent holds
+  handles and constant-size metadata while ephemeral workers read the
+  passages -- and the machine makes that a checkable property (the
+  handle-discipline assertion) rather than a prompt convention.
+machine_paths:
+  - "examples/applications/large-context-swarm/agents/rlm-root/ -- the loop's owner; collect_findings maps ids and metadatas only"
+  - "examples/applications/large-context-swarm/agents/rlm-worker/ -- the half allowed to read corpus text"
+  - "examples/catalog/agents/knowledge-manager/ -- the blackboard blocks"
+modification:
+  change: "add documents to collect_findings' output schema"
+  run: "mage -d examples demo"
+  expect: "assertion A5 fails while A6 still passes"
+  because: "the demo's handle-discipline check is what separates this machine from ordinary retrieval augmentation (#32)"
+verdict_type: holds with residue
+create_pointer: "run the loop against a live corpus by adding the ingest path (#29) and lifting the round bound past one"
+constitutions: [P-4, V-M1, A-1, A-6]
+citations:
+  - id: recursive-lms-2025
+    role: anchor
+    gap: "add to references.yaml (arXiv 2512.24601)"
+links:
+  requires: [C23]
+  supports: [C24]
+acceptance:
+  - the chapter's listings extract from examples/applications/large-context-swarm
+  - the residue section names the declared-not-structural boundary (#32)
