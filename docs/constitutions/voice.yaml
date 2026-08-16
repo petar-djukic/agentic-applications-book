@@ -1,0 +1,146 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+#
+# voice.yaml -- how a chapter sounds and what shape it takes (GH-9,
+# under EPIC GH-6). Ports the Implement-a-Paper form
+# (substack/.claude/constitutions/articles/implement-a-paper.md) and the
+# house style rules (substack/.claude/rules/substack-writing.md) into
+# checkable items. Rules carry V-* ids; SRDs cite ids, never restate.
+#
+# CHECK rules are verifiable by inspection of the draft; READ rules
+# steer drafting and are judged by the critic (GH-12).
+
+meta:
+  governs: "chapter files NN-slug.md"
+  version: 1
+  sources:
+    - "substack/.claude/constitutions/articles/implement-a-paper.md (the form)"
+    - "substack/.claude/rules/substack-writing.md (style, banned words)"
+
+message:
+  - id: V-M1
+    kind: READ
+    rule: >
+      One message per chapter, statable in one sentence, fixed before
+      drafting. It is always about the paper's mechanism meeting the
+      machine's constraints -- never a tour of the repo.
+  - id: V-M2
+    kind: READ
+    rule: >
+      The paper is cited for its mechanism, not its benchmark. Benchmark
+      numbers appear only if the chapter reproduces or contradicts them
+      (argument.yaml A-2 carries the evidence side of this rule).
+
+retest_box:
+  - id: V-R1
+    kind: CHECK
+    rule: >
+      After the opening paragraphs, a blockquote opens with the bold
+      label and carries the paper's claim restated falsifiably, the
+      interval since publication, and the promise to run it --
+      "**The retest.** <claim>. <interval> later, this chapter runs
+      that claim and shows what it missed."
+  - id: V-R2
+    kind: READ
+    rule: >
+      The retest is a conceptual replication, said plainly so no chapter
+      overclaims: the mechanism rebuilt on a different substrate to see
+      whether the claim survives. Never a reproduction unless the
+      benchmarks were actually rerun.
+
+sections:
+  - id: V-S1
+    kind: CHECK
+    rule: >
+      Six sections, in order: the paper's claim; the mapping; the forced
+      decisions and what aged; the exercise; the create pointer; the
+      takeaway question.
+  - id: V-S2
+    kind: READ
+    rule: >
+      The claim section states the mechanism in one paragraph, in plain
+      terms, before any YAML. A reader who never opens the paper knows
+      what it says.
+  - id: V-S3
+    kind: CHECK
+    rule: >
+      The mapping is a table from paper concept to machine construct,
+      with the load-bearing YAML excerpt on the page. The excerpt is
+      short enough to read whole -- under ~40 lines, trimmed states
+      allowed, fabrication never. Excerpts are extracted listings
+      (argument.yaml A-4), not retyped.
+  - id: V-S4
+    kind: READ
+    rule: >
+      The forced-decisions section carries two beats: what the paper
+      left unspecified that the machine made the author decide (failure
+      edges, budgets, termination ownership, retry semantics), and what
+      became routine engineering after the paper was written. This is
+      the chapter's original content and its longest section.
+  - id: V-S5
+    kind: CHECK
+    rule: >
+      The exercise is one modification with a predicted observable
+      outcome -- change X, run Y, expect Z, because W -- with paste-able
+      commands. One exercise, not a problem set.
+  - id: V-S6
+    kind: CHECK
+    rule: >
+      The create pointer appears in every paper chapter: two to four
+      sentences, "to make it do <extension>, you add <pieces>", named
+      files and constructs, no walkthrough. A real path that sounds like
+      an afternoon.
+  - id: V-S7
+    kind: CHECK
+    rule: >
+      The takeaway question closes the chapter: the question the reader
+      now asks of the next agent paper they read, stated once.
+
+register:
+  - id: V-G1
+    kind: READ
+    rule: >
+      The flex is understated or it is not a flex. State size and effort
+      as fact ("the whole change is eleven lines") and deflate
+      immediately after any strong claim. No "amazingly"; no "all it
+      takes is".
+  - id: V-G2
+    kind: READ
+    rule: >
+      Second-person imperative in the exercise section only. The mapping
+      and forced-decisions sections stay observational first person.
+  - id: V-G3
+    kind: READ
+    rule: >
+      Paper authors are treated with respect. Gaps the machine exposes
+      are framed as what a paper cannot carry, not as sloppiness; venues
+      reward mechanisms, so papers under-specify engineering.
+  - id: V-G4
+    kind: READ
+    rule: >
+      Concise, active, specific (Strunk & White): eliminate needless
+      words, prefer concrete language, vary sentence length, use tables
+      over long lists. No AI-recognizable patterns -- parallel triads,
+      repetitive phrasing, excessive dashes.
+
+banned:
+  - id: V-B1
+    kind: CHECK
+    rule: "None of the banned words appears in chapter prose."
+    words: [critical, critically, key, deliberate, strategic, precisely,
+            absolutely, fundamental, fundamentally, breakthrough,
+            principled, "at the heart of", grounded, honest, structural,
+            structurally, leverage, ecosystem, "at scale", "move the
+            needle", unlock, reimagine, disrupt, "paradigm shift",
+            "best practices", "low-hanging fruit", "north star",
+            "game changer", transformative, "worth exploring",
+            "the real question is", "here's the thing"]
+    note: >
+      Ported from substack-writing.md, which carries the full list with
+      reasons; terms of art quoted from a source keep their quotes.
+  - id: V-B2
+    kind: READ
+    rule: >
+      The McKinsey test: a sentence that could appear unedited in a
+      consulting deck or a median LinkedIn post gets deleted and
+      rewritten as something specific.
