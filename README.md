@@ -66,6 +66,7 @@ as commitments, not completed material.
 | [Three Models Walk into a Disagreement](21-debate.md) | Multiagent Debate (2305.14325) |
 | [The Agent That Files Its Own Playbook](22-workflow-memory.md) | Agent Workflow Memory (2409.07429), Voyager (2305.16291) |
 | [Ask Every Model, Then Ask One More](23-mixture-of-agents.md) | Mixture-of-Agents (2406.04692) |
+| The Context Window Is an Environment (chapter not yet drafted; [example runs](examples/applications/large-context-swarm/)) | Recursive Language Models (2512.24601) |
 
 ### The Closer
 
