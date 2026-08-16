@@ -1,0 +1,55 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+#
+# venue.yaml -- what kind of book this is, and is not (GH-9, under EPIC
+# GH-6). The envelope the other constitutions operate inside. Rules
+# carry N-* ids; SRDs cite ids, never restate.
+
+meta:
+  governs: "the book as an artifact"
+  version: 1
+
+is:
+  - id: N-1
+    kind: CHECK
+    rule: >
+      Reproducible: every mechanism the book describes runs from a fresh
+      clone at the pinned declarative-agents release recorded in
+      examples/MANIFEST.yaml, on canned fixtures, with no credentials.
+      The examples audit is the enforcement, and the run-gate
+      (process.yaml P-5) is the per-chapter application.
+  - id: N-2
+    kind: READ
+    rule: >
+      Written for both readers it actually has: the one who clones and
+      runs, and the one who reads the book as a compendium of what the
+      substrate makes easy. Every chapter is written as if the reader
+      will run it; nothing breaks when they do not.
+  - id: N-3
+    kind: READ
+    rule: >
+      Consolidated from the Implement-a-Paper series: the serialization
+      order, titles, and claims-per-piece live in the series plan; this
+      book is where the pieces stabilize, gain listings under audit, and
+      accumulate their verdicts in one place.
+
+is_not:
+  - id: N-4
+    kind: READ
+    rule: >
+      Not a reproduction study: the book reruns no benchmarks it does
+      not say it reran (argument.yaml A-1, A-2), and its verdicts grade
+      claim survival on this substrate, not leaderboard positions.
+  - id: N-5
+    kind: READ
+    rule: >
+      Not a runtime manual: declarative-agents' own how-tos are the
+      sibling series' job. The substrate appears here as the thing
+      papers are rebuilt on; Part I teaches only what the rebuilds
+      need.
+  - id: N-6
+    kind: READ
+    rule: >
+      Not a survey: chapters argue one message each about one paper's
+      mechanism (voice.yaml V-M1); coverage is the series arc's concern,
+      and papers outside it get at most a sentence.

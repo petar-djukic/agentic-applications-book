@@ -1,0 +1,68 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+#
+# argument.yaml -- what the book may claim and how claims are backed
+# (GH-9, under EPIC GH-6). The conceptual-replication discipline and the
+# evidence rules. Rules carry A-* ids; SRDs cite ids, never restate.
+
+meta:
+  governs: "chapter files NN-slug.md and their SRDs"
+  version: 1
+
+replication:
+  - id: A-1
+    kind: READ
+    rule: >
+      Every rebuild is a conceptual replication: the mechanism rebuilt
+      on this substrate to see whether the claim survives once every
+      implicit decision is declared. No chapter claims to have rerun a
+      paper's benchmarks unless it did, and the retest box (voice.yaml
+      V-R2) says which kind of test the chapter ran.
+  - id: A-2
+    kind: CHECK
+    rule: >
+      Mechanisms are cited, benchmarks are not: a paper's numbers appear
+      in a chapter only when the rebuild reproduces or contradicts them,
+      and then with the dataset named.
+
+verdicts:
+  - id: A-3
+    kind: CHECK
+    rule: >
+      Every paper chapter ends its retest in exactly one verdict, drawn
+      from the taxonomy defined in docs/definitions.yaml: holds, holds
+      with residue, or aged out. Residue is named, never gestured at --
+      a verdict of "holds with residue" lists what the paper left out,
+      and "aged out" names what no longer earns its complexity.
+
+evidence:
+  - id: A-4
+    kind: CHECK
+    rule: >
+      Every code excerpt is an extracted listing from a marked region of
+      example source, byte-compared by the audit. Nothing is retyped
+      into prose, and listings extract from examples/applications/,
+      never from the catalog copies.
+  - id: A-5
+    kind: CHECK
+    rule: >
+      Claims about what runs track the example manifests' status
+      vocabulary: nothing planned or partial is described as running,
+      and every "this runs" claim names the release tag and the audit or
+      demo evidence behind it.
+  - id: A-6
+    kind: READ
+    rule: >
+      What a rebuild proves is scoped honestly: the canned demo shows
+      the mechanism's wiring and its declared invariants, not answer
+      quality on live models. Where a chapter's claim rests on one
+      assertion -- as the swarm's does on handle discipline -- the
+      chapter says which assertion is load-bearing.
+  - id: A-7
+    kind: READ
+    rule: >
+      The forced-decisions section is the argument's engine: what the
+      machine forced into writing is presented as findings about the
+      paper's claim, each tied to a declared construct the reader can
+      point at (a failure edge, a budget, a terminal state, an owner of
+      the exit).

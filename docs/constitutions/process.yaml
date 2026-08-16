@@ -1,0 +1,67 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+#
+# process.yaml -- how a chapter gets made (GH-9, under EPIC GH-6).
+# The drafting pipeline and its two gates. Rules carry P-* ids; SRDs
+# cite ids, never restate.
+
+meta:
+  governs: "the drafting workflow; docs/road-map.yaml orders it"
+  version: 1
+
+pipeline:
+  - id: P-1
+    kind: CHECK
+    rule: >
+      SRD before draft: no chapter is drafted without its drafting
+      contract under docs/srd/ (GH-10), and the draft is judged against
+      that contract, not against taste.
+  - id: P-2
+    kind: READ
+    rule: >
+      Draft, critic, revise: after a full draft exists, the critic pass
+      (mage critic, GH-12) runs against the SRD and this book's
+      constitutions, and revision addresses findings before the chapter
+      advances in the road-map. Until the critic target exists, the pass
+      is manual against the same documents.
+  - id: P-3
+    kind: READ
+    rule: >
+      Series-first consolidation: chapters run as Implement-a-Paper
+      pieces at Mesh Intelligence and consolidate here as they
+      stabilize. A chapter and its piece share a message and a mapping;
+      they need not share every sentence.
+
+gates:
+  - id: P-4
+    kind: CHECK
+    rule: >
+      The Create-tier gate is a drafting gate: a Part III chapter or the
+      closer is not drafted until its mechanism has landed -- merged,
+      audited, released -- in declarative-agents or, where the routing
+      rule places the mechanism with its consumer, in this repository's
+      examples. The chapter documents shipped code, never plans.
+      docs/road-map.yaml names each chapter's blocking mechanism and
+      where it lives.
+  - id: P-5
+    kind: CHECK
+    rule: >
+      The run-gate is a publish gate, never a drafting gate: before a
+      chapter ships, the demo it describes runs from a fresh clone at a
+      named release tag, with the repository's audit or integration
+      evidence as the receipt. A draft never waits on it; a publish
+      never skips it.
+  - id: P-6
+    kind: CHECK
+    rule: >
+      Status changes travel together: when a chapter's state moves, the
+      road-map entry, the README table, and any example statuses it
+      claims move in the same commit. Drift between them is a finding.
+
+housekeeping:
+  - id: P-7
+    kind: READ
+    rule: >
+      Follow-on work found while drafting is filed as an issue, not
+      absorbed silently or left in a comment. The road-map's follow_ons
+      list carries only items with an owner-decision pending.
