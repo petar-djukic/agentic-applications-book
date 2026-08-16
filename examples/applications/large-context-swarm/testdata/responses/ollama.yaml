@@ -1,0 +1,78 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+#
+# Canned Ollama responses, in the shape agent-core's mock REST binding
+# reads: routes keyed by method and literal path, each with an ordered
+# response script whose last entry repeats once exhausted.
+#
+# Two endpoints. POST /api/embeddings serves every embed word, and one
+# entry covers all eight calls because the vector's value never decides
+# anything -- the canned Chroma query responses do. POST /api/chat
+# serves invoke_llm, and its five entries are ordered: the plan, then
+# one finding per worker in sequential for_each order, then the
+# reduction.
+routes:
+  - method: POST
+    path: /api/embeddings
+    responses:
+      - status: 200
+        body:
+          embedding: [0.11, -0.42, 0.37, 0.05, -0.19, 0.28, -0.33, 0.14]
+
+  - method: POST
+    path: /api/chat
+    responses:
+      # 1. plan_intents. Three intents, one per cluster, phrased so no
+      #    one of them would retrieve another cluster's documents.
+      - status: 200
+        body:
+          message:
+            role: assistant
+            content: |
+              {"intents": ["Which station recorded a salinity anomaly in March, and on what date?", "Which conductivity instrument was deployed at Station Kelvin during March?", "Who performed the calibration of conductivity instrument CTD-114, and when?"]}
+          eval_count: 64
+          prompt_eval_count: 210
+
+      # 2. worker 1 -- the observations cluster. Names the station and
+      #    the date and says plainly what it could not find, which is
+      #    the behaviour the worker prompt asks for.
+      - status: 200
+        body:
+          message:
+            role: assistant
+            content: |
+              Station Kelvin recorded a salinity anomaly of 1.8 practical salinity units on the night of 11 March, the largest single-night excursion in that station's record. The observation log does not name the instrument that took the reading. [RLM-DEMO-1]
+          eval_count: 58
+          prompt_eval_count: 340
+
+      # 3. worker 2 -- the deployments cluster.
+      - status: 200
+        body:
+          message:
+            role: assistant
+            content: |
+              CTD-114 was installed at 35 metres at Station Kelvin before the March rotation and was the only conductivity sensor on that mooring for the month. The other instrument in place, FLNTU-08, measures turbidity and not conductivity. [RLM-DEMO-1]
+          eval_count: 54
+          prompt_eval_count: 322
+
+      # 4. worker 3 -- the calibration cluster. Note it has no idea why
+      #    CTD-114 matters; it was given a serial number and nothing else.
+      - status: 200
+        body:
+          message:
+            role: assistant
+            content: |
+              CTD-114 was calibrated on 12 January by Renata Oyelaran against the reference cell in the shore laboratory. The conductivity residual after adjustment was within tolerance and the entry was signed off the same day. [RLM-DEMO-1]
+          eval_count: 51
+          prompt_eval_count: 298
+
+      # 5. reduce_findings. The join none of the workers was positioned
+      #    to make: each held one hop.
+      - status: 200
+        body:
+          message:
+            role: assistant
+            content: |
+              Renata Oyelaran calibrated the instrument in question. The chain runs through three separate records: the March salinity anomaly was recorded at Station Kelvin on the night of the eleventh; CTD-114 was the only conductivity sensor on the Kelvin mooring that month, so it is the instrument that took the reading; and CTD-114 was calibrated on 12 January by Renata Oyelaran, two months before the anomaly. No single record connects the anomaly to a technician, and no finding on its own does either. [RLM-DEMO-1]
+          eval_count: 121
+          prompt_eval_count: 512

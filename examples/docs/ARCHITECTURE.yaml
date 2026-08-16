@@ -52,6 +52,17 @@ constraints:
     statement: |
       mage demo completes with no network access and no credentials.
       Fixtures make model output deterministic.
+
+      One qualification, settled while building the first demo. An
+      example that runs its machines needs the pinned runtime module,
+      and a fresh clone downloads it once. After that download the demo
+      is offline: it reaches no service it did not start itself, and it
+      needs no credentials ever. Stub servers bound to the loopback
+      addresses the catalog REST declarations already name serve every
+      external call, so neither a fixture nor a copied declaration has
+      to be edited to keep a demo local. Vendoring the runtime would
+      remove the download and was rejected as too heavy for a book
+      repository.
   - id: pending-bindings
     statement: |
       Two checks bind into the book's own scaffolding: chapter ids

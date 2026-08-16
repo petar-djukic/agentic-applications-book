@@ -1,0 +1,101 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+#
+# What the demo asserts against (srd-large-context-swarm F2, D3). The
+# harness in #34 reads this file rather than hard-coding the run's
+# expectations in Go, so changing the fixture corpus and changing what
+# the demo checks is one edit and not two that can disagree.
+id: expected-large-context-swarm
+title: Expected outcome of the canned blackboard loop
+
+# The root's --request payload. round_bound is 1, so the canned run is a
+# single round: Planning once, three workers, one collect, one reduce.
+# The loop edge is exercised by the machine's structure rather than by
+# this run; a two-round variant would need a second set of canned plan
+# and query responses.
+request:
+  task: Who calibrated the instrument that recorded the March salinity anomaly?
+  collection: rlm-demo-collection
+  anchor: RLM-DEMO-1
+  n_results: 3
+  round_bound: 1
+  id: rlm-demo-final
+  agent: rlm-root
+
+# The answer spans three documents in three different clusters and is in
+# none of them. This is what makes the task a multi-hop one rather than
+# a retrieval one.
+multi_hop:
+  # Station Kelvin is in this list for a reason worth stating. The other
+  # three fragments are all present in cal-ctd-114, so an assertion built
+  # from them alone would pass on a run that read the calibration ledger
+  # and nothing else -- exactly the failure the task is meant to rule
+  # out. Station Kelvin appears in that document nowhere, so the four
+  # together cannot be satisfied by any single document.
+  answer_contains:
+    - Renata Oyelaran
+    - CTD-114
+    - 12 January
+    - Station Kelvin
+  depends_on:
+    - id: obs-kelvin-mar
+      supplies: the anomaly happened at Station Kelvin in March
+      withholds: which instrument recorded it
+    - id: deploy-kelvin
+      supplies: CTD-114 was the only conductivity sensor at Kelvin that month
+      withholds: who calibrated it
+    - id: cal-ctd-114
+      supplies: Renata Oyelaran calibrated CTD-114 on 12 January
+      withholds: that CTD-114 has anything to do with the anomaly
+  # Stated so a later edit to the corpus cannot quietly make the task
+  # answerable from one document. The harness checks this rather than
+  # trusting it: no document in corpus/documents.yaml may contain every
+  # fragment of answer_contains.
+  answerable_from_single_document: false
+  # Honest about the limit of a string check. obs-kelvin-mar and
+  # cal-ctd-114 between them do contain all four fragments, so a
+  # two-document pair satisfies the match without ever establishing that
+  # CTD-114 is the instrument the anomaly came through -- deploy-kelvin
+  # is what supplies that, and no string test can tell a grounded chain
+  # from a lucky overlap. That is what the withholds field above is for:
+  # it records the reasoning the match cannot verify. A5 is the
+  # assertion doing the real work here, not A6.
+  answerable_from_document_pair: true
+
+# Assertions the harness makes, one per SRD D3 clause. Each names what
+# evidence settles it, because several of these are only checkable from
+# the mock binding's request log and not from anything the run returns.
+assertions:
+  - id: A1
+    claim: The per-task collection is created at ingest and deleted at teardown.
+    evidence: request log -- a create-or-get and a delete for rlm-demo-collection.
+  - id: A2
+    claim: The root emitted at least two intents and one worker ran per intent.
+    evidence: the canned plan response declares three; the request log holds three worker query sequences.
+  - id: A3
+    claim: Worker queries carried both where and where_document.
+    evidence: request log -- the body of each POST to the query path, not what came back.
+  - id: A4
+    claim: Every derived entry carries source, agent, and round.
+    evidence: request log -- the metadatas field of each POST to the add path.
+  - id: A5
+    claim: No fixture document text appears in any request the root made.
+    evidence: |
+      request log -- every root-originated body checked against each
+      document's text in corpus/documents.yaml. This is invariant I1 and
+      the assertion the rebuild stands on. It is currently a property of
+      the collect word's output schema rather than of the operation it
+      binds (#32), so this check is the thing that would actually catch
+      a regression.
+  - id: A6
+    claim: The Final entry contains the multi-hop answer.
+    evidence: request log -- the document body of the add whose metadata names source final.
+
+# The distinguishing failure. A machine that fed corpus text to the root
+# would answer the task correctly and fail A5, which is why A6 passing
+# on its own proves nothing worth writing a chapter about.
+negative_control:
+  description: |
+    A5 and A6 together are the result. A6 alone is satisfied by ordinary
+    retrieval augmentation, and the chapter's claim is precisely that
+    this arrangement is not that.

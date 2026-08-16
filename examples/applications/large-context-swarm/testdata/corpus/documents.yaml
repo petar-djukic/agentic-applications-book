@@ -1,0 +1,84 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+#
+# The fixture corpus (srd-large-context-swarm F1, F2). Nine synthetic
+# documents in three clusters that share almost no vocabulary: station
+# observations, instrument deployments, and the calibration ledger. The
+# separation is the point. A single query phrased for one cluster does
+# not retrieve the other two, so the task in expected.yaml cannot be
+# answered by one worker reading one result set -- which is what makes
+# the decomposition load-bearing rather than decorative.
+#
+# Nothing here refers to the real world. The answer is checkable by
+# string match and cannot age.
+id: corpus-large-context-swarm
+title: Fixture corpus for the blackboard loop
+documents:
+  # --- Cluster A: station observations -------------------------------
+  - id: obs-amundsen-feb
+    cluster: observations
+    text: |
+      Station Amundsen, February. Bottom-water temperature drifted
+      0.4 degrees above the seasonal mean across the second and third
+      weeks. The drift resolved without intervention. Watch officers
+      logged no equipment concerns for the period.
+  # Hop 1 of the multi-hop answer: names the anomaly, the station, and
+  # the month, but no instrument.
+  - id: obs-kelvin-mar
+    cluster: observations
+    text: |
+      Station Kelvin, March. A salinity anomaly of 1.8 practical
+      salinity units was recorded on the night of the eleventh, the
+      largest single-night excursion in the station's record. The
+      reading was confirmed against the archive before the shift ended.
+      The log does not name the recording instrument.
+  - id: obs-bellingshausen-apr
+    cluster: observations
+    text: |
+      Station Bellingshausen, April. Turbidity spiked twice during the
+      first week, both times within an hour of the spring tide maximum.
+      Neither spike recurred after the seventh.
+
+  # --- Cluster B: instrument deployments -----------------------------
+  - id: deploy-amundsen
+    cluster: deployments
+    text: |
+      Deployment record, Station Amundsen. Instruments on the mooring
+      for the winter season: CTD-207 at 40 metres and FLNTU-31 at
+      15 metres. No changes were made to the mooring after installation.
+  # Hop 2: joins the station and month to an instrument serial.
+  - id: deploy-kelvin
+    cluster: deployments
+    text: |
+      Deployment record, Station Kelvin. CTD-114 was installed at
+      35 metres before the March rotation and was the only conductivity
+      sensor on the mooring for that month. FLNTU-08 occupied the
+      shallow bracket and measures turbidity only.
+  - id: deploy-bellingshausen
+    cluster: deployments
+    text: |
+      Deployment record, Station Bellingshausen. FLNTU-22 at 12 metres
+      and CTD-303 at 50 metres, both installed at the start of the
+      season and unchanged through April.
+
+  # --- Cluster C: calibration ledger ---------------------------------
+  # Hop 3: joins the instrument serial to a technician and a date.
+  - id: cal-ctd-114
+    cluster: calibration
+    text: |
+      Calibration ledger entry. CTD-114 was calibrated on 12 January by
+      Renata Oyelaran against the reference cell in the shore
+      laboratory. Conductivity residual after adjustment was within
+      tolerance. Signed off the same day.
+  - id: cal-ctd-207
+    cluster: calibration
+    text: |
+      Calibration ledger entry. CTD-207 was calibrated on 4 January by
+      Tomas Ek. The first adjustment failed tolerance and the unit was
+      recalibrated on 6 January by the same technician.
+  - id: cal-flntu-31
+    cluster: calibration
+    text: |
+      Calibration ledger entry. FLNTU-31 was calibrated on 19 January by
+      Priya Raghunathan. Optical windows were replaced before the
+      calibration run.

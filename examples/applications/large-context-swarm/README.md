@@ -38,9 +38,16 @@ line that makes the whole arrangement mean anything —
 [#32](https://github.com/petar-djukic/agentic-applications-book/issues/32)
 tracks making that structural rather than declared.
 
+`testdata/` holds the deterministic inputs: nine synthetic documents in
+three clusters that share almost no vocabulary, a task whose answer
+spans three of them and sits in none, and the canned Chroma and Ollama
+response scripts that make the run reproducible.
+`testdata/expected.yaml` states what the demo asserts and, where a
+string match cannot settle a claim, says so.
+
 | Arriving in | Content |
 |---|---|
-| [#25](https://github.com/petar-djukic/agentic-applications-book/issues/25) | `testdata/` fixture corpus and `demo.yaml` |
+| [#34](https://github.com/petar-djukic/agentic-applications-book/issues/34) | `demo.yaml`, the pinned Go module, the loopback stubs, and the six assertions |
 
 Deployment surface — Helm, kind, lifecycle-manager actors, Job workers —
 stays upstream in declarative-agents, per non-goal N3 in

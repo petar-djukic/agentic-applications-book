@@ -1,0 +1,114 @@
+# Copyright (c) 2026 Petar Djukic
+# SPDX-License-Identifier: MIT
+#
+# Canned Chroma responses, in the mock REST binding's shape: routes
+# keyed by method and literal path, ordered response scripts whose last
+# entry repeats.
+#
+# The literal path matters. corpus-rest.yaml's add and query operations
+# template {collection} from the resolved collection id, so the
+# create-or-get response below fixes that id to rlm-demo-collection and
+# the two templated paths are written out with it substituted. Changing
+# the id means changing three paths in this file.
+routes:
+  # create_or_get_collection_named and its _query variant both POST here
+  # and both read $.id off the response. One entry, repeating: every
+  # create-or-get in the run resolves the same per-task collection.
+  - method: POST
+    path: /api/v2/tenants/default_tenant/databases/default_database/collections
+    responses:
+      - status: 200
+        body:
+          id: rlm-demo-collection
+          name: rlm-demo-collection
+
+  # query_records_filtered. Four calls in run order: one per worker over
+  # the ingested corpus, then the root's collect over what the workers
+  # wrote.
+  #
+  # The metadatas on the first three are source: corpus. On the fourth
+  # they are source: derived with the agent and round the workers
+  # tagged, which is what the root's where filter selects on and what
+  # assertion A4 checks.
+  - method: POST
+    path: /api/v2/tenants/default_tenant/databases/default_database/collections/rlm-demo-collection/query
+    responses:
+      # 1. worker 1 -- observations.
+      - status: 200
+        body:
+          ids: [[obs-kelvin-mar, obs-amundsen-feb, obs-bellingshausen-apr]]
+          documents:
+            - - "Station Kelvin, March. A salinity anomaly of 1.8 practical salinity units was recorded on the night of the eleventh, the largest single-night excursion in the station's record. The reading was confirmed against the archive before the shift ended. The log does not name the recording instrument."
+              - "Station Amundsen, February. Bottom-water temperature drifted 0.4 degrees above the seasonal mean across the second and third weeks. The drift resolved without intervention. Watch officers logged no equipment concerns for the period."
+              - "Station Bellingshausen, April. Turbidity spiked twice during the first week, both times within an hour of the spring tide maximum. Neither spike recurred after the seventh."
+          metadatas:
+            - - {source: corpus, cluster: observations}
+              - {source: corpus, cluster: observations}
+              - {source: corpus, cluster: observations}
+
+      # 2. worker 2 -- deployments.
+      - status: 200
+        body:
+          ids: [[deploy-kelvin, deploy-amundsen, deploy-bellingshausen]]
+          documents:
+            - - "Deployment record, Station Kelvin. CTD-114 was installed at 35 metres before the March rotation and was the only conductivity sensor on the mooring for that month. FLNTU-08 occupied the shallow bracket and measures turbidity only."
+              - "Deployment record, Station Amundsen. Instruments on the mooring for the winter season: CTD-207 at 40 metres and FLNTU-31 at 15 metres. No changes were made to the mooring after installation."
+              - "Deployment record, Station Bellingshausen. FLNTU-22 at 12 metres and CTD-303 at 50 metres, both installed at the start of the season and unchanged through April."
+          metadatas:
+            - - {source: corpus, cluster: deployments}
+              - {source: corpus, cluster: deployments}
+              - {source: corpus, cluster: deployments}
+
+      # 3. worker 3 -- calibration.
+      - status: 200
+        body:
+          ids: [[cal-ctd-114, cal-ctd-207, cal-flntu-31]]
+          documents:
+            - - "Calibration ledger entry. CTD-114 was calibrated on 12 January by Renata Oyelaran against the reference cell in the shore laboratory. Conductivity residual after adjustment was within tolerance. Signed off the same day."
+              - "Calibration ledger entry. CTD-207 was calibrated on 4 January by Tomas Ek. The first adjustment failed tolerance and the unit was recalibrated on 6 January by the same technician."
+              - "Calibration ledger entry. FLNTU-31 was calibrated on 19 January by Priya Raghunathan. Optical windows were replaced before the calibration run."
+          metadatas:
+            - - {source: corpus, cluster: calibration}
+              - {source: corpus, cluster: calibration}
+              - {source: corpus, cluster: calibration}
+
+      # 4. the root's collect. Chroma returns documents here as it does
+      #    for any query -- the root's collect_findings word declines to
+      #    map them, which is where I1 is enforced. They are present in
+      #    this fixture precisely so the harness's A5 check has something
+      #    to catch if that word ever starts mapping them.
+      - status: 200
+        body:
+          ids: [[finding-observations, finding-deployments, finding-calibration]]
+          documents:
+            - - "Station Kelvin recorded a salinity anomaly of 1.8 practical salinity units on the night of 11 March, the largest single-night excursion in that station's record. The observation log does not name the instrument that took the reading. [RLM-DEMO-1]"
+              - "CTD-114 was installed at 35 metres at Station Kelvin before the March rotation and was the only conductivity sensor on that mooring for the month. The other instrument in place, FLNTU-08, measures turbidity and not conductivity. [RLM-DEMO-1]"
+              - "CTD-114 was calibrated on 12 January by Renata Oyelaran against the reference cell in the shore laboratory. The conductivity residual after adjustment was within tolerance and the entry was signed off the same day. [RLM-DEMO-1]"
+          metadatas:
+            - - {source: derived, agent: rlm-worker, round: 1}
+              - {source: derived, agent: rlm-worker, round: 1}
+              - {source: derived, agent: rlm-worker, round: 1}
+
+  # add_records_tagged. Four writes: three findings and the Final entry.
+  # Chroma's add response carries no identifier, which is why the record
+  # id reaches the terminal Result through carry_forward on the write
+  # word rather than from this body (srd-knowledge-manager P6).
+  - method: POST
+    path: /api/v2/tenants/default_tenant/databases/default_database/collections/rlm-demo-collection/add
+    responses:
+      - status: 201
+        body: {}
+
+  # Teardown. Assertion A1's second half.
+  - method: POST
+    path: /api/v2/tenants/default_tenant/databases/default_database/collections/rlm-demo-collection/delete
+    responses:
+      - status: 200
+        body: {}
+
+  - method: GET
+    path: /api/v2/heartbeat
+    responses:
+      - status: 200
+        body:
+          "nanosecond heartbeat": 1
