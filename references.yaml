@@ -46,3 +46,266 @@ references:
   container-title: Mesh Intelligence
   URL: https://meshintelligence.substack.com/p/the-loop-is-the-easy-part
   issued: {year: 2026}
+
+# --- Papers the book rebuilds, one entry per SRD citation id (GH-48).
+# Metadata verified against the arXiv abstract pages; ids are the ones
+# the SRDs under docs/srd/ pin, so they never regenerate.
+
+- id: coala-2023
+  type: article
+  author:
+  - family: Sumers
+    given: Theodore R.
+  - family: Yao
+    given: Shunyu
+  - family: Narasimhan
+    given: Karthik
+  - family: Griffiths
+    given: Thomas L.
+  title: "Cognitive Architectures for Language Agents"
+  container-title: arXiv preprint arXiv:2309.02427
+  URL: https://arxiv.org/abs/2309.02427
+  issued: {year: 2023}
+  arxiv_id: "2309.02427"
+
+- id: stateflow-2024
+  type: article
+  author:
+  - family: Wu
+    given: Yiran
+  - family: Yue
+    given: Tianwei
+  - family: Zhang
+    given: Shaokun
+  - family: Wang
+    given: Chi
+  - family: Wu
+    given: Qingyun
+  title: "StateFlow: Enhancing LLM Task-Solving through State-Driven Workflows"
+  container-title: arXiv preprint arXiv:2403.11322
+  URL: https://arxiv.org/abs/2403.11322
+  issued: {year: 2024}
+  arxiv_id: "2403.11322"
+
+- id: react-2022
+  type: article
+  author:
+  - family: Yao
+    given: Shunyu
+  - family: Zhao
+    given: Jeffrey
+  - family: Yu
+    given: Dian
+  - family: Du
+    given: Nan
+  - family: Shafran
+    given: Izhak
+  - family: Narasimhan
+    given: Karthik
+  - family: Cao
+    given: Yuan
+  title: "ReAct: Synergizing Reasoning and Acting in Language Models"
+  container-title: arXiv preprint arXiv:2210.03629
+  URL: https://arxiv.org/abs/2210.03629
+  issued: {year: 2022}
+  arxiv_id: "2210.03629"
+
+- id: llm-modulo-2024
+  type: article
+  author:
+  - family: Kambhampati
+    given: Subbarao
+  - family: Valmeekam
+    given: Karthik
+  - family: Guan
+    given: Lin
+  - family: Verma
+    given: Mudit
+  - family: Stechly
+    given: Kaya
+  - family: Bhambri
+    given: Siddhant
+  - family: Saldyt
+    given: Lucas
+  - family: Murthy
+    given: Anil
+  title: "LLMs Can't Plan, But Can Help Planning in LLM-Modulo Frameworks"
+  container-title: arXiv preprint arXiv:2402.01817
+  URL: https://arxiv.org/abs/2402.01817
+  issued: {year: 2024}
+  arxiv_id: "2402.01817"
+
+- id: crag-2024
+  type: article
+  author:
+  - family: Yan
+    given: Shi-Qi
+  - family: Gu
+    given: Jia-Chen
+  - family: Zhu
+    given: Yun
+  - family: Ling
+    given: Zhen-Hua
+  title: "Corrective Retrieval Augmented Generation"
+  container-title: arXiv preprint arXiv:2401.15884
+  URL: https://arxiv.org/abs/2401.15884
+  issued: {year: 2024}
+  arxiv_id: "2401.15884"
+
+- id: adaptive-rag-2024
+  type: article
+  author:
+  - family: Jeong
+    given: Soyeong
+  - family: Baek
+    given: Jinheon
+  - family: Cho
+    given: Sukmin
+  - family: Hwang
+    given: Sung Ju
+  - family: Park
+    given: Jong C.
+  title: "Adaptive-RAG: Learning to Adapt Retrieval-Augmented Large Language Models through Question Complexity"
+  container-title: arXiv preprint arXiv:2403.14403
+  URL: https://arxiv.org/abs/2403.14403
+  issued: {year: 2024}
+  arxiv_id: "2403.14403"
+
+- id: frugalgpt-2023
+  type: article
+  author:
+  - family: Chen
+    given: Lingjiao
+  - family: Zaharia
+    given: Matei
+  - family: Zou
+    given: James
+  title: "FrugalGPT: How to Use Large Language Models While Reducing Cost and Improving Performance"
+  container-title: arXiv preprint arXiv:2305.05176
+  URL: https://arxiv.org/abs/2305.05176
+  issued: {year: 2023}
+  arxiv_id: "2305.05176"
+
+- id: routellm-2024
+  type: article
+  author:
+  - family: Ong
+    given: Isaac
+  - family: Almahairi
+    given: Amjad
+  - family: Wu
+    given: Vincent
+  - family: Chiang
+    given: Wei-Lin
+  - family: Wu
+    given: Tianhao
+  - family: Gonzalez
+    given: Joseph E.
+  - family: Kadous
+    given: M Waleed
+  - family: Stoica
+    given: Ion
+  title: "RouteLLM: Learning to Route LLMs with Preference Data"
+  container-title: arXiv preprint arXiv:2406.18665
+  URL: https://arxiv.org/abs/2406.18665
+  issued: {year: 2024}
+  arxiv_id: "2406.18665"
+
+- id: llm-as-judge-2023
+  type: article
+  author:
+  - family: Zheng
+    given: Lianmin
+  - family: Chiang
+    given: Wei-Lin
+  - family: Sheng
+    given: Ying
+  - family: Zhuang
+    given: Siyuan
+  - family: Wu
+    given: Zhanghao
+  - family: Zhuang
+    given: Yonghao
+  - family: Lin
+    given: Zi
+  - family: Li
+    given: Zhuohan
+  - family: Li
+    given: Dacheng
+  - family: Xing
+    given: Eric P.
+  - family: Zhang
+    given: Hao
+  - family: Gonzalez
+    given: Joseph E.
+  - family: Stoica
+    given: Ion
+  title: "Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena"
+  container-title: arXiv preprint arXiv:2306.05685
+  URL: https://arxiv.org/abs/2306.05685
+  issued: {year: 2023}
+  arxiv_id: "2306.05685"
+
+- id: critic-2023
+  type: article
+  author:
+  - family: Gou
+    given: Zhibin
+  - family: Shao
+    given: Zhihong
+  - family: Gong
+    given: Yeyun
+  - family: Shen
+    given: Yelong
+  - family: Yang
+    given: Yujiu
+  - family: Duan
+    given: Nan
+  - family: Chen
+    given: Weizhu
+  title: "CRITIC: Large Language Models Can Self-Correct with Tool-Interactive Critiquing"
+  container-title: arXiv preprint arXiv:2305.11738
+  URL: https://arxiv.org/abs/2305.11738
+  issued: {year: 2023}
+  arxiv_id: "2305.11738"
+
+- id: sagas-1987
+  type: paper-conference
+  author:
+  - family: Garcia-Molina
+    given: Hector
+  - family: Salem
+    given: Kenneth
+  title: "Sagas"
+  container-title: Proceedings of the ACM SIGMOD International Conference on Management of Data
+  page: 249-259
+  issued: {year: 1987}
+  DOI: 10.1145/38713.38742
+
+- id: sagallm-2025
+  type: article
+  author:
+  - family: Chang
+    given: Edward Y.
+  - family: Geng
+    given: Longling
+  title: "SagaLLM: Context Management, Validation, and Transaction Guarantees for Multi-Agent LLM Planning"
+  container-title: arXiv preprint arXiv:2503.11951
+  URL: https://arxiv.org/abs/2503.11951
+  issued: {year: 2025}
+  arxiv_id: "2503.11951"
+
+- id: recursive-lms-2025
+  type: article
+  author:
+  - family: Zhang
+    given: Alex L.
+  - family: Kraska
+    given: Tim
+  - family: Khattab
+    given: Omar
+  title: "Recursive Language Models"
+  container-title: arXiv preprint arXiv:2512.24601
+  URL: https://arxiv.org/abs/2512.24601
+  issued: {year: 2025}
+  arxiv_id: "2512.24601"

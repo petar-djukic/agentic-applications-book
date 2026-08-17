@@ -41,7 +41,6 @@ prior_material:
 citations:
   - id: react-2022
     role: anchor
-    gap: "add to references.yaml (arXiv 2210.03629)"
 constitutions: [V-M1, V-S4, A-1, A-7]
 content:
   - say: the loop in one excerpt, honestly small

@@ -23,7 +23,6 @@ citations:
   - id: sagas-1987
     role: anchor
     note: forward pointer to C17; the safety argument gets its paper there
-    gap: "confirm id in references.yaml or add"
 constitutions: [V-G4, A-4]
 content:
   - say: a run is a ledger; rollback is reading it backwards

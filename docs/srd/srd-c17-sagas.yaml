@@ -45,10 +45,8 @@ prior_material:
 citations:
   - id: sagas-1987
     role: anchor
-    gap: "add to references.yaml (SIGMOD 1987)"
   - id: sagallm-2025
     role: evidence
-    gap: "add to references.yaml (arXiv 2503.11951)"
 constitutions: [V-M1, V-G3, A-1, A-7]
 content:
   - say: the 1987 mechanism, stated as the authors stated it

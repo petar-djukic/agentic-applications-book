@@ -27,7 +27,6 @@ citations:
   - id: stateflow-2024
     role: anchor
     note: forward pointer to C11, where the argument gets its paper
-    gap: "confirm id in references.yaml or add"
 constitutions: [V-G4, A-4, N-5]
 content:
   - say: the part you cannot open — weights are rented, everything else is owned

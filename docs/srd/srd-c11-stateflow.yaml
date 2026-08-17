@@ -43,7 +43,6 @@ prior_material:
 citations:
   - id: stateflow-2024
     role: anchor
-    gap: "add to references.yaml (arXiv 2403.11322)"
 constitutions: [V-M1, V-S4, A-1, A-7]
 content:
   - say: the paper's mechanism, one paragraph before any YAML

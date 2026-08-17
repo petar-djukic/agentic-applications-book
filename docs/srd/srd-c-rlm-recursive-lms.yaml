@@ -36,7 +36,6 @@ constitutions: [P-4, V-M1, A-1, A-6]
 citations:
   - id: recursive-lms-2025
     role: anchor
-    gap: "add to references.yaml (arXiv 2512.24601)"
 links:
   requires: [C23]
   supports: [C24]

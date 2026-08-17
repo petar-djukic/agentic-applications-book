@@ -46,10 +46,8 @@ prior_material:
 citations:
   - id: llm-as-judge-2023
     role: anchor
-    gap: "add to references.yaml (arXiv 2306.05685)"
   - id: critic-2023
     role: anchor
-    gap: "add to references.yaml (arXiv 2305.11738)"
 constitutions: [V-M1, V-S3, A-1, A-6]
 content:
   - say: the bias and rubric worries, briefly and with respect
