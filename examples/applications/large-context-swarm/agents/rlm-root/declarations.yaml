@@ -337,12 +337,14 @@ tools:
     output:
       description: The write receipt.
       schema: {type: object}
+    # listing:begin c4-1
     side_effects:
       - kind: filesystem_write
         target: worker-seed.json
         state: seed_written
     reversibility: {classification: reversible}
     undo: {strategy: file_snapshot_restore, description: Restore the prior file state from the receipt.}
+    # listing:end c4-1
     errors:
       - signal: ToolFailed
         condition: The path is missing or the workspace is not writable.
@@ -404,6 +406,7 @@ tools:
     output:
       description: The worker's stdout, unused; the blackboard carries the result.
       schema: {type: string}
+    # listing:begin c4-2
     side_effects:
       - kind: child_process
         target: rlm_worker
@@ -419,6 +422,7 @@ tools:
       description: Delete the records the dispatched workers wrote for this round.
       payload: boundary_compensation
       captures: [collection, round]
+    # listing:end c4-2
     errors:
       - signal: ToolFailed
         condition: The worker exits unsuccessfully.
