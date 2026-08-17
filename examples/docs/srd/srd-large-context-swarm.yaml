@@ -163,7 +163,9 @@ evidence:
     and writes the Final entry -- and asserts every D3 property against
     the stubs' request log, exiting non-zero on any failure. The
     evidence command is `go run ./cmd/swarmdemo` from the application
-    directory; the demo needs ports 8000 and 11434 free (#38).
+    directory; the stubs bind ephemeral loopback ports and the machines
+    run from a staged, address-patched profile copy, so a real Ollama
+    or Chroma on the default ports does not block the demo (#38).
   caveat: |
     The run is canned (N2): model output and query results replay
     fixtures, so the assertions prove the mechanism's wiring and its

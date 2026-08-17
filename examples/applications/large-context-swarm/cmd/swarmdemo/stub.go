@@ -17,14 +17,11 @@ import (
 )
 
 // The loopback stubs. corpus-rest.yaml names 127.0.0.1:11434 and
-// 127.0.0.1:8000 and allows no other host, and invoke_llm's
-// provider_url defaults to the same Ollama address, so serving both
-// there is what keeps the demo offline without editing a copied
-// declaration.
-const (
-	ollamaAddr = "127.0.0.1:11434"
-	chromaAddr = "127.0.0.1:8000"
-)
+// 127.0.0.1:8000 and allows no other host, but a developer working on
+// this book usually has a real Ollama on 11434 (#38). The stubs
+// therefore bind ephemeral loopback ports, and the demo stages an
+// address-patched copy of the profile tree pointing at them -- the
+// on-disk catalog copy stays byte-identical, which the audit checks.
 
 // fixture mirrors the response-script files under testdata/responses/.
 // The shape is agent-core's mock REST binding: routes keyed by method
@@ -137,17 +134,17 @@ func (s *stub) unmatched() []string {
 	return out
 }
 
-// serve starts one listener and returns a shutdown func. Binding
-// explicitly rather than through ListenAndServe so a port already in
-// use fails here, with the address named, instead of racing the run.
-func serve(addr string, handler http.Handler) (func(), error) {
-	listener, err := net.Listen("tcp", addr)
+// serve binds an ephemeral loopback port and returns the listener's
+// address plus a shutdown func. An ephemeral port cannot collide with a
+// real Chroma or Ollama, so the demo runs with both present (#38).
+func serve(handler http.Handler) (string, func(), error) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
-		return nil, fmt.Errorf("bind %s: %w (is a real Chroma or Ollama already running?)", addr, err)
+		return "", nil, fmt.Errorf("bind loopback stub: %w", err)
 	}
 	server := &http.Server{Handler: handler}
 	go func() { _ = server.Serve(listener) }()
-	return func() { _ = server.Close() }, nil
+	return listener.Addr().String(), func() { _ = server.Close() }, nil
 }
 
 // bodyContains reports whether any recorded request body holds needle.

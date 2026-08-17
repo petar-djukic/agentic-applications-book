@@ -10,10 +10,10 @@
 # six properties of srd-large-context-swarm D3 against the stubs'
 # request log -- exiting non-zero if any fails.
 #
-# The loop step binds 127.0.0.1:8000 and 127.0.0.1:11434, the addresses
-# the copied corpus-rest.yaml hardcodes. A real Ollama or Chroma on
-# either port fails the bind with a message naming it (#38): stop them
-# before running the demo.
+# The loop step binds its stubs to ephemeral loopback ports and runs
+# the machines from a staged, address-patched copy of the profile tree
+# (#38). The copied corpus-rest.yaml on disk stays byte-identical; a
+# real Ollama or Chroma can keep its ports.
 steps:
   - name: validate rlm-worker
     argv:
