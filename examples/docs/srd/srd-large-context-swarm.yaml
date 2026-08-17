@@ -100,6 +100,18 @@ invariants:
       This is the whole point of the rebuild: if corpus text reaches the
       root, the machine has reproduced ordinary retrieval augmentation
       and the paper's claim is untested.
+    # The machine-readable half, applied by the examples audit: in the
+    # named agent's declarations, no word binding the named operation
+    # may carry any of the named fields in its output schema, and the
+    # schema must be closed. This is the authoring-time check GH-32
+    # asked for; the structural fix (a handles-only operation upstream)
+    # is tracked against the runtime repo and retires this rule's job
+    # when the catalog re-copies at a release that carries it.
+    enforce:
+      kind: output-schema-excludes
+      agent: agents/rlm-root
+      operation: query_records_filtered
+      fields: [documents]
   - id: I2
     name: constant-root-context
     statement: |

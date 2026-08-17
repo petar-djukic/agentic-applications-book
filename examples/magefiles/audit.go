@@ -63,6 +63,8 @@ func auditExamples(examplesRoot, bookRoot string) (findings []string, pending []
 	srdFindings, srdPending := auditSRDRealizes(examplesRoot, bookRoot, manifest)
 	findings = append(findings, srdFindings...)
 	pending = append(pending, srdPending...)
+
+	findings = append(findings, auditInvariantEnforcements(examplesRoot, manifest)...)
 	return findings, pending
 }
 
@@ -301,6 +303,125 @@ func auditSRDRealizes(examplesRoot, bookRoot string, manifest Manifest) (finding
 		pending = append(pending, "srd realizes resolution (docs/srd absent, #10)")
 	}
 	return findings, pending
+}
+
+// invariantEnforce is the machine-readable half of an example-SRD
+// invariant. kind output-schema-excludes: in the named agent's
+// declarations, no word binding the named operation may carry any of
+// the named fields in its output schema, and that schema must be
+// closed (additionalProperties: false) so an unnamed field cannot pass
+// through either. This is what makes an invariant like the swarm's
+// handle discipline (I1) an authoring-time check rather than a comment:
+// re-adding a forbidden field is a one-line edit that every runtime
+// assertion can survive on canned fixtures, and this rule is the line
+// that catches it (#32).
+type invariantEnforce struct {
+	Kind      string   `yaml:"kind"`
+	Agent     string   `yaml:"agent"`
+	Operation string   `yaml:"operation"`
+	Fields    []string `yaml:"fields"`
+}
+
+type srdInvariant struct {
+	ID      string            `yaml:"id"`
+	Enforce *invariantEnforce `yaml:"enforce"`
+}
+
+// declaredWord is the slice of a declarations.yaml tool entry the
+// enforcement rule reads: the operation binding and the output schema.
+type declaredWord struct {
+	Name   string `yaml:"name"`
+	Output struct {
+		Schema struct {
+			Properties           map[string]any `yaml:"properties"`
+			AdditionalProperties *bool          `yaml:"additionalProperties"`
+		} `yaml:"schema"`
+	} `yaml:"output"`
+	Config struct {
+		Operation string `yaml:"operation"`
+	} `yaml:"config"`
+}
+
+// auditInvariantEnforcements walks every chapter-application SRD and
+// applies each invariant's enforce block. An invariant without one is
+// prose and stays prose; an enforce block with an unknown kind is a
+// finding, never a silent skip.
+func auditInvariantEnforcements(examplesRoot string, manifest Manifest) []string {
+	var findings []string
+	for _, entry := range manifest.Examples {
+		if entry.Kind != kindChapterApplication || entry.SRD == "" {
+			continue
+		}
+		srdPath := filepath.Join(examplesRoot, filepath.FromSlash(entry.SRD))
+		invariants, err := loadInvariants(srdPath)
+		if err != nil {
+			findings = append(findings, fmt.Sprintf("%s: %v", entry.ID, err))
+			continue
+		}
+		for _, invariant := range invariants {
+			if invariant.Enforce == nil {
+				continue
+			}
+			findings = append(findings, enforceInvariant(examplesRoot, entry, invariant)...)
+		}
+	}
+	return findings
+}
+
+func enforceInvariant(examplesRoot string, entry Entry, invariant srdInvariant) []string {
+	enforce := invariant.Enforce
+	label := fmt.Sprintf("%s: invariant %s", entry.ID, invariant.ID)
+	if enforce.Kind != "output-schema-excludes" {
+		return []string{fmt.Sprintf("%s: enforce kind %q unknown", label, enforce.Kind)}
+	}
+	if enforce.Agent == "" || enforce.Operation == "" || len(enforce.Fields) == 0 {
+		return []string{fmt.Sprintf("%s: enforce block needs agent, operation, and fields", label)}
+	}
+	declPath := filepath.Join(entryDir(examplesRoot, entry), filepath.FromSlash(enforce.Agent), "declarations.yaml")
+	content, err := os.ReadFile(declPath)
+	if err != nil {
+		return []string{fmt.Sprintf("%s: read %s: %v", label, declPath, err)}
+	}
+	var document struct {
+		Tools []declaredWord `yaml:"tools"`
+	}
+	if err := yamlUnmarshalLenient(content, &document); err != nil {
+		return []string{fmt.Sprintf("%s: parse %s: %v", label, declPath, err)}
+	}
+	var findings []string
+	for _, word := range document.Tools {
+		if word.Config.Operation != enforce.Operation {
+			continue
+		}
+		for _, field := range enforce.Fields {
+			if _, present := word.Output.Schema.Properties[field]; present {
+				findings = append(findings, fmt.Sprintf(
+					"%s: word %s binds %s and names %q in its output schema",
+					label, word.Name, enforce.Operation, field))
+			}
+		}
+		schema := word.Output.Schema
+		if schema.AdditionalProperties == nil || *schema.AdditionalProperties {
+			findings = append(findings, fmt.Sprintf(
+				"%s: word %s binds %s with an open output schema; the exclusion only binds when additionalProperties is false",
+				label, word.Name, enforce.Operation))
+		}
+	}
+	return findings
+}
+
+func loadInvariants(path string) ([]srdInvariant, error) {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("read srd: %w", err)
+	}
+	var document struct {
+		Invariants []srdInvariant `yaml:"invariants"`
+	}
+	if err := yamlUnmarshalLenient(content, &document); err != nil {
+		return nil, fmt.Errorf("parse srd %s: %w", path, err)
+	}
+	return document.Invariants, nil
 }
 
 func loadRealizes(path string) ([]string, error) {
