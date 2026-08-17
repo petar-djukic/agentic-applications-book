@@ -14,8 +14,10 @@ root's boundary.
 **Status: implemented.** `mage -d examples demo` validates both
 profiles under the pinned runtime, then runs the blackboard loop end to
 end against loopback stubs and asserts the six D3 properties against
-the request log. The loop step needs ports 8000 and 11434 free
-([#38](https://github.com/petar-djukic/agentic-applications-book/issues/38)). The contract this module
+the request log. The stubs bind ephemeral loopback ports and the
+machines run from a staged, address-patched copy of the profiles
+([#38](https://github.com/petar-djukic/agentic-applications-book/issues/38)),
+so a real Ollama or Chroma can keep running. The contract this module
 must satisfy is
 [`docs/srd/srd-large-context-swarm.yaml`](../../docs/srd/srd-large-context-swarm.yaml);
 the work is tracked under

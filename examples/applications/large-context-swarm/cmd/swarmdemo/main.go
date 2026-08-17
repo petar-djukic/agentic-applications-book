@@ -15,6 +15,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"os"
 	"os/exec"
@@ -77,16 +78,23 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	stopChroma, err := serve(chromaAddr, chroma)
+	chromaAddr, stopChroma, err := serve(chroma)
 	if err != nil {
 		return err
 	}
 	defer stopChroma()
-	stopOllama, err := serve(ollamaAddr, ollama)
+	chromaBase = "http://" + chromaAddr + "/api/v2/tenants/default_tenant/databases/default_database"
+	ollamaAddr, stopOllama, err := serve(ollama)
 	if err != nil {
 		return err
 	}
 	defer stopOllama()
+
+	stagedApp, cleanupStage, err := stageProfiles(chromaAddr, ollamaAddr)
+	if err != nil {
+		return err
+	}
+	defer cleanupStage()
 
 	binary, cleanup, err := buildRuntime()
 	if err != nil {
@@ -105,7 +113,7 @@ func run() error {
 	if err := ingestCorpus(expected.Request.Collection, docs); err != nil {
 		return err
 	}
-	runErr := runRoot(binary, requestPath)
+	runErr := runRoot(binary, requestPath, stagedApp)
 	if err := teardownCollection(expected.Request.Collection); err != nil {
 		return err
 	}
@@ -120,7 +128,8 @@ func run() error {
 	return assertAll(records, expected, docs)
 }
 
-const chromaBase = "http://" + chromaAddr + "/api/v2/tenants/default_tenant/databases/default_database"
+// chromaBase is set once the Chroma stub has bound its ephemeral port.
+var chromaBase string
 
 // ingestCorpus creates the per-task collection and adds every fixture
 // document, tagged source corpus so the workers' where filter selects
@@ -186,6 +195,73 @@ func buildRuntime() (string, func(), error) {
 	return binary, func() { os.RemoveAll(dir) }, nil
 }
 
+// stageProfiles copies the profile closure -- the app's agents/ tree
+// and the catalog knowledge-manager family its profiles include -- into
+// a temp directory preserving the relative layout the include paths
+// depend on, and rewrites the transport addresses in the staged copies
+// to the stubs' ephemeral ports. The on-disk catalog copy stays
+// byte-identical (#38): this is the same runtime staging the fork's own
+// conformance harness uses for hard-coded listen addresses. It returns
+// the staged app directory.
+func stageProfiles(chromaAddr, ollamaAddr string) (string, func(), error) {
+	appDir, err := os.Getwd()
+	if err != nil {
+		return "", nil, err
+	}
+	examplesRoot := filepath.Clean(filepath.Join(appDir, "..", ".."))
+	stageRoot, err := os.MkdirTemp("", "swarmdemo-profiles-")
+	if err != nil {
+		return "", nil, err
+	}
+	cleanup := func() { os.RemoveAll(stageRoot) }
+
+	chromaPort := chromaAddr[strings.LastIndex(chromaAddr, ":")+1:]
+	ollamaPort := ollamaAddr[strings.LastIndex(ollamaAddr, ":")+1:]
+	patch := strings.NewReplacer(
+		"http://127.0.0.1:8000", "http://"+chromaAddr,
+		"http://127.0.0.1:11434", "http://"+ollamaAddr,
+		"http://localhost:11434", "http://"+ollamaAddr,
+		"ports: [8000, 11434]", "ports: ["+chromaPort+", "+ollamaPort+"]",
+	)
+
+	for _, dir := range []string{
+		filepath.Join("applications", "large-context-swarm", "agents"),
+		filepath.Join("catalog", "agents", "knowledge-manager"),
+	} {
+		if err := copyPatched(filepath.Join(examplesRoot, dir), filepath.Join(stageRoot, dir), patch); err != nil {
+			cleanup()
+			return "", nil, fmt.Errorf("stage %s: %w", dir, err)
+		}
+	}
+	return filepath.Join(stageRoot, "applications", "large-context-swarm"), cleanup, nil
+}
+
+// copyPatched copies a directory tree, applying the address patches to
+// every YAML file on the way.
+func copyPatched(source, target string, patch *strings.Replacer) error {
+	return filepath.WalkDir(source, func(path string, entry fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		relative, err := filepath.Rel(source, path)
+		if err != nil {
+			return err
+		}
+		destination := filepath.Join(target, relative)
+		if entry.IsDir() {
+			return os.MkdirAll(destination, 0o755)
+		}
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		if strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml") {
+			content = []byte(patch.Replace(string(content)))
+		}
+		return os.WriteFile(destination, content, 0o644)
+	})
+}
+
 func writeRequest(expected expectations) (string, error) {
 	payload := map[string]any{
 		"task":        expected.Request.Task,
@@ -204,11 +280,7 @@ func writeRequest(expected expectations) (string, error) {
 	return path, os.WriteFile(path, encoded, 0o644)
 }
 
-func runRoot(binary, requestPath string) error {
-	appDir, err := os.Getwd()
-	if err != nil {
-		return err
-	}
+func runRoot(binary, requestPath, appDir string) error {
 	// The root runs in its own scratch workspace: worker-seed.json and
 	// worker-request.json land there rather than in the repository tree.
 	// The dispatch script finds the runtime and the worker profile
