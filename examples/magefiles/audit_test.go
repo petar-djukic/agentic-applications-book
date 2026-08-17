@@ -199,3 +199,107 @@ func TestAuditRejectsUnknownManifestField(t *testing.T) {
 		"schema_version: 1\nunknown_field: 1\nruntime:\n  module: m\n  release: v1\nexamples: []\n")
 	requireFinding(t, auditFindings(t, examplesRoot, bookRoot), "unknown_field")
 }
+
+// --- invariant enforcement (GH-32) ------------------------------------
+
+const fixtureEnforcedSRD = `id: srd-sagas
+realizes: [srd-17.1]
+invariants:
+  - id: I1
+    enforce:
+      kind: output-schema-excludes
+      agent: agents/root
+      operation: query_records_filtered
+      fields: [documents]
+`
+
+const fixtureCleanDeclarations = `tools:
+  - name: collect_findings
+    output:
+      schema:
+        properties:
+          ids: {type: array}
+          metadatas: {type: array}
+        additionalProperties: false
+    config:
+      operation: query_records_filtered
+  - name: search_blackboard
+    output:
+      schema:
+        properties:
+          documents: {type: array}
+        additionalProperties: false
+    config:
+      operation: some_other_operation
+`
+
+// writeEnforcedFixture layers an enforced invariant onto the standard
+// fixture: the SRD gains an enforce block and the named agent gains a
+// compliant declarations file.
+func writeEnforcedFixture(t *testing.T) (examplesRoot, bookRoot string) {
+	t.Helper()
+	examplesRoot, bookRoot = writeFixture(t)
+	mustWrite(t, filepath.Join(examplesRoot, "docs", "srd", "srd-sagas.yaml"), fixtureEnforcedSRD)
+	mustWrite(t, filepath.Join(examplesRoot, "applications", "sagas", "agents", "root", "declarations.yaml"),
+		fixtureCleanDeclarations)
+	return examplesRoot, bookRoot
+}
+
+func TestAuditPassesCompliantEnforcedInvariant(t *testing.T) {
+	examplesRoot, bookRoot := writeEnforcedFixture(t)
+	if findings := auditFindings(t, examplesRoot, bookRoot); len(findings) != 0 {
+		t.Fatalf("findings on a compliant enforced invariant: %v", findings)
+	}
+}
+
+func TestAuditRejectsForbiddenFieldInOutputSchema(t *testing.T) {
+	examplesRoot, bookRoot := writeEnforcedFixture(t)
+	violating := strings.Replace(fixtureCleanDeclarations,
+		"          ids: {type: array}",
+		"          ids: {type: array}\n          documents: {type: array}", 1)
+	mustWrite(t, filepath.Join(examplesRoot, "applications", "sagas", "agents", "root", "declarations.yaml"), violating)
+	requireFinding(t, auditFindings(t, examplesRoot, bookRoot),
+		`names "documents" in its output schema`)
+}
+
+func TestAuditRejectsOpenOutputSchema(t *testing.T) {
+	examplesRoot, bookRoot := writeEnforcedFixture(t)
+	for _, open := range []string{"additionalProperties: true", "type: object"} {
+		violating := strings.Replace(fixtureCleanDeclarations, "additionalProperties: false", open, 1)
+		mustWrite(t, filepath.Join(examplesRoot, "applications", "sagas", "agents", "root", "declarations.yaml"), violating)
+		requireFinding(t, auditFindings(t, examplesRoot, bookRoot), "open output schema")
+	}
+}
+
+func TestAuditIgnoresOtherOperations(t *testing.T) {
+	// search_blackboard names documents but binds a different operation;
+	// the compliant fixture already passing proves the scoping, and this
+	// test pins it against a rename of the unrelated word.
+	examplesRoot, bookRoot := writeEnforcedFixture(t)
+	renamed := strings.Replace(fixtureCleanDeclarations, "some_other_operation", "another_operation", 1)
+	mustWrite(t, filepath.Join(examplesRoot, "applications", "sagas", "agents", "root", "declarations.yaml"), renamed)
+	if findings := auditFindings(t, examplesRoot, bookRoot); len(findings) != 0 {
+		t.Fatalf("findings for a word on a different operation: %v", findings)
+	}
+}
+
+func TestAuditRejectsUnknownEnforceKind(t *testing.T) {
+	examplesRoot, bookRoot := writeEnforcedFixture(t)
+	srd := strings.Replace(fixtureEnforcedSRD, "output-schema-excludes", "no-such-kind", 1)
+	mustWrite(t, filepath.Join(examplesRoot, "docs", "srd", "srd-sagas.yaml"), srd)
+	requireFinding(t, auditFindings(t, examplesRoot, bookRoot), `enforce kind "no-such-kind" unknown`)
+}
+
+func TestAuditRejectsIncompleteEnforceBlock(t *testing.T) {
+	examplesRoot, bookRoot := writeEnforcedFixture(t)
+	srd := strings.Replace(fixtureEnforcedSRD, "      fields: [documents]\n", "", 1)
+	mustWrite(t, filepath.Join(examplesRoot, "docs", "srd", "srd-sagas.yaml"), srd)
+	requireFinding(t, auditFindings(t, examplesRoot, bookRoot), "needs agent, operation, and fields")
+}
+
+func TestAuditRejectsMissingDeclarationsForEnforcedAgent(t *testing.T) {
+	examplesRoot, bookRoot := writeEnforcedFixture(t)
+	srd := strings.Replace(fixtureEnforcedSRD, "agents/root", "agents/absent", 1)
+	mustWrite(t, filepath.Join(examplesRoot, "docs", "srd", "srd-sagas.yaml"), srd)
+	requireFinding(t, auditFindings(t, examplesRoot, bookRoot), "invariant I1: read")
+}

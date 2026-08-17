@@ -632,11 +632,13 @@ tools:
       # the reducing model.
       #
       # This is the line to be careful with. Adding documents to this
-      # schema would leave every test passing and turn the machine into
-      # ordinary retrieval augmentation, which is the result the chapter
-      # exists to distinguish itself from. A handles-only operation
-      # upstream would make it structural rather than declared; that is
-      # tracked in #32.
+      # schema would turn the machine into ordinary retrieval
+      # augmentation, which is the result the chapter exists to
+      # distinguish itself from -- and it now fails the examples audit,
+      # which applies invariant I1's enforce block from the example SRD
+      # to exactly this word (GH-32). A handles-only operation upstream
+      # would make the guarantee structural rather than declared; that
+      # is tracked against the runtime repo.
       description: Record ids and metadata for this round's derived entries. No document content.
       schema:
         type: object
