@@ -264,9 +264,14 @@ func auditChapterIDs(bookRoot string, manifest Manifest) (findings, pending []st
 	return findings, nil
 }
 
-// auditSRDRealizes checks each example SRD exists and that its
-// realizes: ids resolve into the book's docs/srd/. Until that tree
-// lands (#10) resolution is pending.
+// auditSRDRealizes checks example SRDs. Two concerns, deliberately
+// split (#28): every entry that declares an srd: must point at a file
+// that exists and parses, whatever the entry's kind -- a catalog
+// family's SRD is the copy's contract and a dangling path is rot like
+// any other. The realizes: binding stays a chapter relationship: only
+// chapter-application entries are required to carry an SRD, and only
+// their resolution can go pending while the book's docs/srd/ is
+// absent. Ids any SRD does carry must resolve.
 func auditSRDRealizes(examplesRoot, bookRoot string, manifest Manifest) (findings, pending []string) {
 	bookSRD := filepath.Join(bookRoot, "docs", "srd")
 	bookSRDExists := false
@@ -275,11 +280,10 @@ func auditSRDRealizes(examplesRoot, bookRoot string, manifest Manifest) (finding
 	}
 	pendingNeeded := false
 	for _, entry := range manifest.Examples {
-		if entry.Kind != kindChapterApplication {
-			continue
-		}
 		if entry.SRD == "" {
-			findings = append(findings, fmt.Sprintf("%s: chapter-application entry has no srd", entry.ID))
+			if entry.Kind == kindChapterApplication {
+				findings = append(findings, fmt.Sprintf("%s: chapter-application entry has no srd", entry.ID))
+			}
 			continue
 		}
 		srdPath := filepath.Join(examplesRoot, filepath.FromSlash(entry.SRD))
@@ -288,8 +292,10 @@ func auditSRDRealizes(examplesRoot, bookRoot string, manifest Manifest) (finding
 			findings = append(findings, fmt.Sprintf("%s: %v", entry.ID, err))
 			continue
 		}
-		if !bookSRDExists {
-			pendingNeeded = true
+		if len(realizes) > 0 && !bookSRDExists {
+			if entry.Kind == kindChapterApplication {
+				pendingNeeded = true
+			}
 			continue
 		}
 		for _, id := range realizes {

@@ -303,3 +303,56 @@ func TestAuditRejectsMissingDeclarationsForEnforcedAgent(t *testing.T) {
 	mustWrite(t, filepath.Join(examplesRoot, "docs", "srd", "srd-sagas.yaml"), srd)
 	requireFinding(t, auditFindings(t, examplesRoot, bookRoot), "invariant I1: read")
 }
+
+// --- catalog-family SRD checks (GH-28) --------------------------------
+
+// withCatalogSRD points the fixture's catalog-family entry at an srd
+// path without touching anything else.
+func withCatalogSRD(t *testing.T, examplesRoot, srdField string) {
+	t.Helper()
+	manifest := strings.Replace(fixtureManifest, "    kind: catalog-family\n",
+		"    kind: catalog-family\n    srd: "+srdField+"\n", 1)
+	mustWrite(t, filepath.Join(examplesRoot, "MANIFEST.yaml"), manifest)
+}
+
+func TestAuditAcceptsCatalogFamilySRD(t *testing.T) {
+	examplesRoot, bookRoot := writeFixture(t)
+	withCatalogSRD(t, examplesRoot, "docs/srd/srd-executor.yaml")
+	mustWrite(t, filepath.Join(examplesRoot, "docs", "srd", "srd-executor.yaml"),
+		"id: srd-executor\n# the copy's contract; no realizes list\n")
+	if findings := auditFindings(t, examplesRoot, bookRoot); len(findings) != 0 {
+		t.Fatalf("findings on a valid catalog-family srd: %v", findings)
+	}
+}
+
+func TestAuditRejectsDanglingCatalogFamilySRD(t *testing.T) {
+	examplesRoot, bookRoot := writeFixture(t)
+	withCatalogSRD(t, examplesRoot, "docs/srd/srd-absent.yaml")
+	requireFinding(t, auditFindings(t, examplesRoot, bookRoot), "read srd")
+}
+
+func TestAuditRejectsUnparseableCatalogFamilySRD(t *testing.T) {
+	examplesRoot, bookRoot := writeFixture(t)
+	withCatalogSRD(t, examplesRoot, "docs/srd/srd-executor.yaml")
+	mustWrite(t, filepath.Join(examplesRoot, "docs", "srd", "srd-executor.yaml"),
+		"id: [unclosed\n")
+	requireFinding(t, auditFindings(t, examplesRoot, bookRoot), "parse srd")
+}
+
+func TestAuditResolvesCatalogFamilyRealizesWhenPresent(t *testing.T) {
+	examplesRoot, bookRoot := writeFixture(t)
+	withCatalogSRD(t, examplesRoot, "docs/srd/srd-executor.yaml")
+	mustWrite(t, filepath.Join(examplesRoot, "docs", "srd", "srd-executor.yaml"),
+		"id: srd-executor\nrealizes: [srd-nowhere]\n")
+	requireFinding(t, auditFindings(t, examplesRoot, bookRoot),
+		"realizes id srd-nowhere does not resolve")
+}
+
+func TestAuditCatalogFamilyWithoutSRDStaysFine(t *testing.T) {
+	// The unmodified fixture: executor declares no srd and the audit is
+	// clean. Pinned so the existence check never grows into a mandate.
+	examplesRoot, bookRoot := writeFixture(t)
+	if findings := auditFindings(t, examplesRoot, bookRoot); len(findings) != 0 {
+		t.Fatalf("findings on a catalog family without an srd: %v", findings)
+	}
+}
