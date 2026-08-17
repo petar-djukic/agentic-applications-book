@@ -210,11 +210,18 @@ excluded:
   - id: X2
     name: live-model-runs
     statement: |
-      A live Chroma and Ollama variant may be added behind an explicit
-      opt-in. It is never reached by audit, test, or demo. Non-goal N2
-      makes this a requirement rather than a preference: a documented
-      skip is not enough, because a target needing a daemon must not sit
-      in the default path at all.
+      The live Chroma and Ollama variant exists as the opt-in
+      integration:swarm target (cmd/swarmlive, #29). It is never
+      reached by audit, test, or demo -- non-goal N2 makes this a
+      requirement rather than a preference -- and it skips with a
+      recorded reason naming the missing server or model. Its ingest
+      path is the shipped memory-write block run once per fixture
+      document with corpus/ingest/0 provenance, so no ingest block was
+      copied and fixture loading stays what the write path already
+      does. What it proves is scoped by A-6: lifecycle, provenance
+      tags, and the Final entry on a real model and real storage --
+      never answer quality, and never I1, whose assertion needs the
+      canned demo's wire log.
   - id: X3
     name: benchmark-scoring
     statement: |
