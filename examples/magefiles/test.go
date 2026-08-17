@@ -9,6 +9,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/magefile/mage/sh"
 )
 
 // Test validates every manifest entry's declarations: each YAML
@@ -30,6 +32,19 @@ func Test() error {
 		return fmt.Errorf("test: %d failure(s)", len(failures))
 	}
 	fmt.Printf("test: %d example(s) validated\n", len(manifest.Examples))
+	return runConformance()
+}
+
+// runConformance runs the adopted conformance package without the live
+// flag: declaration-shape pinning plus the fixture-double machine runs,
+// none of which needs a live server (VISION N2). The live round-trip in
+// the same package is gated behind -live and belongs to the opt-in
+// Integration namespace, never to Test.
+func runConformance() error {
+	fmt.Println("test: conformance (non-live)")
+	if err := sh.RunV("go", "-C", "conformance", "test", "-count=1", "."); err != nil {
+		return fmt.Errorf("conformance: %w", err)
+	}
 	return nil
 }
 

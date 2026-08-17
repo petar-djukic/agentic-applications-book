@@ -356,3 +356,10 @@ func TestAuditCatalogFamilyWithoutSRDStaysFine(t *testing.T) {
 		t.Fatalf("findings on a catalog family without an srd: %v", findings)
 	}
 }
+
+func TestAuditRejectsUnpinnedConformanceModule(t *testing.T) {
+	examplesRoot, bookRoot := writeFixture(t)
+	mustWrite(t, filepath.Join(examplesRoot, "conformance", "go.mod"),
+		"module example.com/conformance\n\nrequire github.com/Nokia-Bell-Labs/declarative-agents/agent-core v0.0.0-wrong\n")
+	requireFinding(t, auditFindings(t, examplesRoot, bookRoot), "does not pin v0.20260803.0")
+}

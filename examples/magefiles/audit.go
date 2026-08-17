@@ -203,6 +203,11 @@ func auditApplicationModules(examplesRoot string, manifest Manifest) []string {
 	var findings []string
 	pattern := filepath.Join(examplesRoot, "applications", "*", "go.mod")
 	matches, _ := filepath.Glob(pattern)
+	// The conformance module builds the same pinned runtime, so the
+	// single-release closure covers it too.
+	if _, err := os.Stat(filepath.Join(examplesRoot, "conformance", "go.mod")); err == nil {
+		matches = append(matches, filepath.Join(examplesRoot, "conformance", "go.mod"))
+	}
 	for _, path := range matches {
 		content, err := os.ReadFile(path)
 		if err != nil {
