@@ -63,15 +63,15 @@ examples:
       release: v0.20260814.4
       simplified: >-
         Copied at fork commit c87a5322, whose newest upstream tag is
-        v0.20260814.4. Two of the family's six blocks came over:
-        corpus-rest.yaml complete, and the memory-write block. Not
-        copied: corpus-ingest, corpus-reader, rag-server, and
-        documentation-curator, none of which the swarm composes. The
-        fork's own governance -- srd023, its use case and test suite,
-        the 740-line conformance test, and the integration gate -- did
-        not come over; the obligations they state are restated in
-        docs/srd/srd-knowledge-manager.yaml, because this directory has
-        no live-Chroma test surface to run them against (VISION N2).
-        The fork is a fork of Nokia-Bell-Labs/declarative-agents: the
-        blocks are Nokia's, the extension was authored in the fork under
-        the same BSD-3 header, and both are covered by it.
+        v0.20260814.4. Four of the family's six blocks are here:
+        corpus-rest.yaml complete and the memory-write block (#26),
+        plus corpus-ingest and corpus-reader byte-identical (#40, read
+        by the compatibility test; the swarm composes none of them).
+        Not copied: rag-server and documentation-curator. The fork's
+        conformance test and integration gate were adopted with #40
+        into examples/conformance/ and integration:blackboardMemory;
+        srd023 and its use case are not reproduced -- their obligations
+        are restated in docs/srd/srd-knowledge-manager.yaml. The fork
+        is a fork of Nokia-Bell-Labs/declarative-agents: the blocks are
+        Nokia's, the extension was authored in the fork under the same
+        BSD-3 header, and both are covered by it.

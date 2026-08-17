@@ -17,7 +17,12 @@ end against loopback stubs and asserts the six D3 properties against
 the request log. The stubs bind ephemeral loopback ports and the
 machines run from a staged, address-patched copy of the profiles
 ([#38](https://github.com/petar-djukic/agentic-applications-book/issues/38)),
-so a real Ollama or Chroma can keep running. The contract this module
+so a real Ollama or Chroma can keep running. The opt-in live variant
+is `mage -d examples integration:swarm`
+([#29](https://github.com/petar-djukic/agentic-applications-book/issues/29)):
+real servers, real embeddings, the fixture corpus ingested through the
+shipped memory-write block; it skips with a recorded reason when a
+server or model is absent. The contract this module
 must satisfy is
 [`docs/srd/srd-large-context-swarm.yaml`](../../docs/srd/srd-large-context-swarm.yaml);
 the work is tracked under

@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/magefile/mage/mg"
@@ -44,5 +45,22 @@ func (Integration) BlackboardMemory() error {
 		return nil
 	}
 	fmt.Println("integration:blackboardMemory PASS - shipped memory-write stored a tagged entry retrieved by metadata and by exact substring")
+	return nil
+}
+
+// Swarm runs the blackboard loop against a real local Chroma and
+// Ollama (srd-large-context-swarm X2): fixture corpus ingested through
+// the shipped memory-write block with live embeddings, rlm-root run on
+// the live chat model, lifecycle and provenance asserted, collection
+// torn down. Skips with a recorded reason when a server or model is
+// absent; never reached by audit, test, or demo.
+func (Integration) Swarm() error {
+	cmd := exec.Command("go", "run", "./cmd/swarmlive")
+	cmd.Dir = filepath.Join("applications", "large-context-swarm")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("run the live swarm loop: %w", err)
+	}
 	return nil
 }
