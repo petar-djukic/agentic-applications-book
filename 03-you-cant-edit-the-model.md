@@ -224,7 +224,7 @@ exhaustively at load time. The model call becomes one declared tool at a
 single boundary, so swapping providers is a configuration change rather
 than an engineering project.
 
-## Key terms
+## Terms
 
 | Term | Definition |
 |---|---|
