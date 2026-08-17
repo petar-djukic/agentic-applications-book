@@ -49,7 +49,7 @@ chapters:
 
   # --- The map.
   - id: C9
-    status: stub
+    status: drafted
     note: "Series piece 1, the opener; needs no new code and can draft any time."
 
   # --- Part II: used and modified. Mechanisms already shipped upstream;
