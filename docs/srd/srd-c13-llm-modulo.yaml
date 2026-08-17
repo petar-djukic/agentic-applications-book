@@ -40,7 +40,6 @@ prior_material:
 citations:
   - id: llm-modulo-2024
     role: anchor
-    gap: "add to references.yaml (arXiv 2402.01817)"
 constitutions: [V-M1, V-S3, A-1, A-2]
 content:
   - say: the architecture in the paper's own terms

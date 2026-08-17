@@ -43,10 +43,8 @@ prior_material:
 citations:
   - id: frugalgpt-2023
     role: anchor
-    gap: "add to references.yaml (arXiv 2305.05176)"
   - id: routellm-2024
     role: anchor
-    gap: "add to references.yaml (arXiv 2406.18665)"
 constitutions: [V-M1, V-S5, A-1, A-2]
 content:
   - say: the papers' routing economics in one paragraph, no reproduced numbers

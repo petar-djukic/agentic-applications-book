@@ -46,10 +46,8 @@ prior_material:
 citations:
   - id: crag-2024
     role: anchor
-    gap: "add to references.yaml (arXiv 2401.15884)"
   - id: adaptive-rag-2024
     role: anchor
-    gap: "add to references.yaml (arXiv 2403.14403)"
 constitutions: [V-M1, V-S4, A-1, A-6]
 content:
   - say: both mechanisms in plain terms
