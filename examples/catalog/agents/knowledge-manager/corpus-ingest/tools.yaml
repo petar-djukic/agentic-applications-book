@@ -1,0 +1,17 @@
+# Copyright (c) 2026 Nokia
+# SPDX-License-Identifier: BSD-3-Clause
+tools:
+  - chroma_ready
+  - ollama_ready
+  - invoke_llm
+  - parse_response
+  - report_parse_error
+  - done
+  - list_resource_paths
+  - list_resource
+  - read_resource
+  - embed_document
+  - resolve_collection
+  - chroma_add
+  - count_collection
+  - chroma_count

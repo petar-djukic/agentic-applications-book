@@ -19,10 +19,8 @@ summary: |
   it must not lose are stated below; what was left behind is recorded in
   the manifest's provenance block.
 
-# Not checked by the audit. auditSRDRealizes skips catalog-family
-# entries, so the manifest's srd: field on this entry is indexing rather
-# than an enforced binding, and this document carries no realizes: list.
-# Extending the check to catalog families is #28.
+# The audit checks this file exists and parses (#28); it carries no
+# realizes: list because a catalog copy realizes no chapter.
 
 contains:
   - id: C1
@@ -136,10 +134,13 @@ not_copied:
   - id: X1
     name: sibling-blocks
     statement: |
-      corpus-ingest, corpus-reader, rag-server, and documentation-curator
-      stay upstream. The swarm composes none of them. A live-model
-      variant of the swarm demo would need an ingest path; the canned
-      demo does not, so nothing here is blocked by their absence (#29).
+      rag-server and documentation-curator stay upstream. corpus-ingest
+      and corpus-reader came over with #40 — not because the swarm
+      composes them (it does not), but because P8's compatibility test
+      pins that the shipped ingest and reader blocks bind only the
+      pre-extension operations, and a pinned claim needs the blocks on
+      hand. A live-model variant of the swarm demo would still need an
+      ingest path wired into the swarm itself (#29).
   - id: X2
     name: fork-governance
     statement: |
@@ -150,11 +151,34 @@ not_copied:
   - id: X3
     name: conformance-evidence
     statement: |
-      The fork's 740-line conformance test and its integration gate did
-      not come over. Both require a live Chroma, and VISION non-goal N2
-      keeps live dependencies out of audit, test, and demo — so there is
-      nothing here for them to run against. This is the minimum path
-      #26 allows, and it does mean the behavioural evidence for P1
-      through P7 lives upstream rather than in this repository. The
-      copy's fidelity is checkable by diff against the fork; the blocks'
-      runtime behaviour is not.
+      Adopted with #40, resolving what #26 left behind: the fork's
+      conformance test lives at examples/conformance/ (diffable against
+      fork commit c87a5322 up to path and package lines), and its
+      integration gate is the opt-in mage target
+      integration:blackboardMemory. The declaration-shape and
+      fixture-double coverage runs in the default test target with no
+      live dependency (VISION N2); only the live round-trip stays
+      behind the opt-in gate, and it skips with a recorded reason when
+      Chroma or Ollama is absent. The verified_by mapping below states
+      which test proves which property.
+
+verified_by:
+  # Tests live in examples/conformance/blackboard_memory_test.go and
+  # run without any live server except where marked live.
+  - property: P1
+    tests: [TestBlackboardMemoryCollectionParameter, TestBlackboardMemoryCollectionIsolation]
+  - property: P2
+    tests: [TestBlackboardMemoryCollectionParameter]
+  - property: P3
+    tests: [TestBlackboardMemoryTaggedWrite, TestBlackboardMemoryWriteBlock]
+  - property: P4
+    tests: [TestBlackboardMemoryFilteredQuery]
+  - property: P5
+    tests: [TestBlackboardMemoryTaggedWrite, TestBlackboardMemoryFilteredQuery]
+  - property: P6
+    tests: [TestBlackboardMemoryWriteBlock, TestBlackboardMemoryLiveRoundtrip]
+    note: the live round-trip is opt-in (-live); the fixture run proves it canned
+  - property: P7
+    tests: [TestBlackboardMemoryWriteBlock]
+  - property: P8
+    tests: [TestBlackboardMemoryCompatibility]
