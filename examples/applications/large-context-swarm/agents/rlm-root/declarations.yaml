@@ -619,6 +619,7 @@ tools:
     non_goals:
       - Does not map the documents field. See the note on the output schema.
       - Does not widen the filter beyond source derived and the current round.
+    # listing:begin c5-2
     parameters:
       type: object
       properties:
@@ -627,6 +628,7 @@ tools:
         where: {type: object}
         where_document: {type: object}
         n_results: {type: integer}
+    # listing:end c5-2
     emits: [QueryResponded, CommandError]
     output:
       # I1, stated where it is enforced. query_records_filtered's own
@@ -666,9 +668,11 @@ tools:
           difference: The worker's query takes documents because a worker is allowed to read them; this one takes ids and metadata only.
       after: [resolve_collect_collection]
       before: [check_round_bound]
+    # listing:begin c5-1
     config:
       rest_ref: chroma
       operation: query_records_filtered
+    # listing:end c5-1
 
   - name: check_round_bound
     type: builtin
