@@ -368,6 +368,7 @@ tools:
       # record id is a checksum of the intent, so the dispatch stays
       # deterministic and model-free.
       - |
+        # listing:begin c6-2
         intent="$(cat)"
         id="finding-$(printf %s "$intent" | cksum | cut -d' ' -f1)"
         jq -cn --arg content "$intent" --arg id "$id" --slurpfile seed worker-seed.json \
@@ -377,6 +378,7 @@ tools:
           --request worker-request.json
     stdin_source: $from(intent).value
     stdin_max_bytes: 4096
+    # listing:end c6-2
     visibility: internal
     category: boundary
     description: Merge one intent with the shared seed, write the worker request, and run the worker.
@@ -727,10 +729,12 @@ tools:
 
   - name: increment_round
     type: exec
+    # listing:begin c6-1
     binary: jq
     args: ["-c", ". + 1"]
     stdin_source: $from(round_count).output
     stdin_max_bytes: 32
+    # listing:end c6-1
     visibility: internal
     category: word
     description: Advance the visible round counter by one.
