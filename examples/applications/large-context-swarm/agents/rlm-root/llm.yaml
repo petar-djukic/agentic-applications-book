@@ -34,10 +34,12 @@ tools:
     output:
       description: Raw plan text.
       schema: {type: string}
+    # listing:begin c9-2
     side_effects:
       - kind: external_api
         target: ollama.generate
         state: read_only
+    # listing:end c9-2
     reversibility: {classification: reversible}
     undo: {strategy: noop, description: Generating text does not mutate state.}
     errors:

@@ -32,4 +32,12 @@ links:
 gaps:
   - the chapter is a stub; the article draft supplies the arc
 acceptance:
-  - the walked endpoint is extracted from the catalog copy's actual file
+  # Amended while drafting (GH-68). The original read "the walked
+  # endpoint is extracted from the catalog copy's actual file", which no
+  # chapter can satisfy: listing sources resolve under
+  # examples/applications/ only, a listing marker inside catalog/ is an
+  # examples-audit finding, and the copy is byte-verified against
+  # upstream (#26). The endpoint still comes from the real file; only
+  # the half that can be audited is extracted.
+  - the walked operation is a real one from catalog/agents/knowledge-manager/corpus-rest.yaml, cited by path
+  - the word that binds it is an extracted listing from examples/applications/

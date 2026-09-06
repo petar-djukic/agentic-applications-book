@@ -337,12 +337,14 @@ tools:
     output:
       description: The write receipt.
       schema: {type: object}
+    # listing:begin c4-1
     side_effects:
       - kind: filesystem_write
         target: worker-seed.json
         state: seed_written
     reversibility: {classification: reversible}
     undo: {strategy: file_snapshot_restore, description: Restore the prior file state from the receipt.}
+    # listing:end c4-1
     errors:
       - signal: ToolFailed
         condition: The path is missing or the workspace is not writable.
@@ -366,6 +368,7 @@ tools:
       # record id is a checksum of the intent, so the dispatch stays
       # deterministic and model-free.
       - |
+        # listing:begin c6-2
         intent="$(cat)"
         id="finding-$(printf %s "$intent" | cksum | cut -d' ' -f1)"
         jq -cn --arg content "$intent" --arg id "$id" --slurpfile seed worker-seed.json \
@@ -375,6 +378,7 @@ tools:
           --request worker-request.json
     stdin_source: $from(intent).value
     stdin_max_bytes: 4096
+    # listing:end c6-2
     visibility: internal
     category: boundary
     description: Merge one intent with the shared seed, write the worker request, and run the worker.
@@ -404,6 +408,7 @@ tools:
     output:
       description: The worker's stdout, unused; the blackboard carries the result.
       schema: {type: string}
+    # listing:begin c4-2
     side_effects:
       - kind: child_process
         target: rlm_worker
@@ -419,6 +424,7 @@ tools:
       description: Delete the records the dispatched workers wrote for this round.
       payload: boundary_compensation
       captures: [collection, round]
+    # listing:end c4-2
     errors:
       - signal: ToolFailed
         condition: The worker exits unsuccessfully.
@@ -615,6 +621,7 @@ tools:
     non_goals:
       - Does not map the documents field. See the note on the output schema.
       - Does not widen the filter beyond source derived and the current round.
+    # listing:begin c5-2
     parameters:
       type: object
       properties:
@@ -623,6 +630,7 @@ tools:
         where: {type: object}
         where_document: {type: object}
         n_results: {type: integer}
+    # listing:end c5-2
     emits: [QueryResponded, CommandError]
     output:
       # I1, stated where it is enforced. query_records_filtered's own
@@ -662,9 +670,11 @@ tools:
           difference: The worker's query takes documents because a worker is allowed to read them; this one takes ids and metadata only.
       after: [resolve_collect_collection]
       before: [check_round_bound]
+    # listing:begin c5-1
     config:
       rest_ref: chroma
       operation: query_records_filtered
+    # listing:end c5-1
 
   - name: check_round_bound
     type: builtin
@@ -719,10 +729,12 @@ tools:
 
   - name: increment_round
     type: exec
+    # listing:begin c6-1
     binary: jq
     args: ["-c", ". + 1"]
     stdin_source: $from(round_count).output
     stdin_max_bytes: 32
+    # listing:end c6-1
     visibility: internal
     category: word
     description: Advance the visible round counter by one.

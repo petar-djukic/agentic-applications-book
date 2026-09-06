@@ -162,6 +162,7 @@ signals:
 transitions:
   # capture_request must be the first action: only the first word's
   # previous Result is the request seed (runtime contract, --request).
+  # listing:begin c9-1
   - state: Idle
     signal: Seed
     next: CapturingRequest
@@ -176,6 +177,7 @@ transitions:
   - state: CapturingRequest
     signal: CommandError
     next: Failed
+  # listing:end c9-1
 
   # invoke_llm's user message is the previous Result's output, so the
   # planner must be preceded by a compose that renders the task -- not
